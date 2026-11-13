@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict'),M=require('../explore-math.js');
+const series=values=>({history:values.map((close,i)=>({date:`2026-11-${String(i+1).padStart(2,'0')}`,close}))});
+assert.ok(Math.abs(M.change(series([100,110]),['2026-11-01','2026-11-02'])-10)<1e-10);
+assert.equal(M.change(series([100]),['2026-11-01','2026-11-02']),null);assert.equal(M.endpoints(series([1]),1),null);
+let r=M.ratio({A:series([10,12,15]),B:series([10,11,12])},'A','B');assert.equal(r[0].close,100);assert.equal(r.at(-1).close,125);
+assert.equal(M.ratio({A:series([1,2])},'A','B').length,0);
+const basket={SPY:series([100,100])};for(const n of M.MAG7)basket[n]=series([100,110]);assert.ok(Math.abs(M.ratio(basket,'MAG7','SPY').at(-1).close-110)<1e-8);delete basket.TSLA;assert.equal(M.ratio(basket,'MAG7','SPY').length,0);
+const index={members:[{symbol:'A'},{symbol:'B'},{symbol:'missing'}]};r=M.ranking(index,{A:series([10,9]),B:series([10,12])},['2026-11-01','2026-11-02']);assert.deepEqual(r.map(x=>x.symbol),['B','A']);
+let p=M.project(0,0,0,0);assert.equal(p.z,1);assert.equal(p.x,0);p=M.project(0,180,0,0);assert.ok(p.z<0);p=M.project(23.7,120.96,-120.96,23.7);assert.ok(Math.abs(p.x)<1e-10&&Math.abs(p.y)<1e-10&&p.z>.9999);
+console.log('Explore: exact dates, missing data, ratios, MAG7 basket, ranking and geographic projection passed.');

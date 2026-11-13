@@ -1,0 +1,49 @@
+Region,Country,Segment,Ticker,Fund Name,Expense Ratio
+Asia-Pacific,Australia,Broad Market,EWA,iShares MSCI Australia ETF,0.50%
+Asia-Pacific,China,Broad Market,MCHI,iShares MSCI China ETF,0.59%
+Asia-Pacific,China,Large-Cap,FXI,iShares China Large-Cap ETF,0.74%
+Asia-Pacific,China,A-Shares,CNYA,iShares MSCI China A ETF,0.60%
+Asia-Pacific,China,Small-Cap,ECNS,iShares MSCI China Small-Cap ETF,0.59%
+Asia-Pacific,Hong Kong,Broad Market,EWH,iShares MSCI Hong Kong ETF,0.50%
+Asia-Pacific,India,Broad Market,INDA,iShares MSCI India ETF,0.61%
+Asia-Pacific,India,Small-Cap,SMIN,iShares MSCI India Small-Cap ETF,0.74%
+Asia-Pacific,Indonesia,Broad Market,EIDO,iShares MSCI Indonesia ETF,0.59%
+Asia-Pacific,Japan,Broad Market,EWJ,iShares MSCI Japan ETF,0.49%
+Asia-Pacific,Japan,Currency Hedged,HEWJ,iShares Currency Hedged MSCI Japan ETF,0.50%
+Asia-Pacific,Japan,Small-Cap,SCJ,iShares MSCI Japan Small-Cap ETF,0.50%
+Asia-Pacific,Malaysia,Broad Market,EWM,iShares MSCI Malaysia ETF,0.50%
+Asia-Pacific,New Zealand,Broad Market,ENZL,iShares MSCI New Zealand ETF,0.50%
+Asia-Pacific,Philippines,Broad Market,EPHE,iShares MSCI Philippines ETF,0.59%
+Asia-Pacific,Singapore,Broad Market,EWS,iShares MSCI Singapore ETF,0.50%
+Asia-Pacific,South Korea,Broad Market,EWY,iShares MSCI South Korea ETF,0.59%
+Asia-Pacific,Taiwan,Broad Market,EWT,iShares MSCI Taiwan ETF,0.59%
+Asia-Pacific,Thailand,Broad Market,THD,iShares MSCI Thailand ETF,0.59%
+Europe,Austria,Broad Market,EWO,iShares MSCI Austria ETF,0.50%
+Europe,Belgium,Broad Market,EWK,iShares MSCI Belgium ETF,0.50%
+Europe,Denmark,Broad Market,EDEN,iShares MSCI Denmark ETF,0.53%
+Europe,Finland,Broad Market,EFNL,iShares MSCI Finland ETF,0.53%
+Europe,France,Broad Market,EWQ,iShares MSCI France ETF,0.50%
+Europe,Germany,Broad Market,EWG,iShares MSCI Germany ETF,0.49%
+Europe,Ireland,Broad Market,EIRL,iShares MSCI Ireland ETF,0.50%
+Europe,Italy,Broad Market,EWI,iShares MSCI Italy ETF,0.50%
+Europe,Netherlands,Broad Market,EWN,iShares MSCI Netherlands ETF,0.50%
+Europe,Norway,Broad Market,ENOR,iShares MSCI Norway ETF,0.53%
+Europe,Poland,Broad Market,EPOL,iShares MSCI Poland ETF,0.59%
+Europe,Spain,Broad Market,EWP,iShares MSCI Spain ETF,0.50%
+Europe,Sweden,Broad Market,EWD,iShares MSCI Sweden ETF,0.54%
+Europe,Switzerland,Broad Market,EWL,iShares MSCI Switzerland ETF,0.50%
+Europe,United Kingdom,Broad Market,EWU,iShares MSCI United Kingdom ETF,0.50%
+Europe,United Kingdom,Small-Cap,EWUS,iShares MSCI United Kingdom Small-Cap ETF,0.59%
+Americas (Ex-U.S.),Brazil,Broad Market,EWZ,iShares MSCI Brazil ETF,0.59%
+Americas (Ex-U.S.),Brazil,Small-Cap,EWZS,iShares MSCI Brazil Small-Cap ETF,0.59%
+Americas (Ex-U.S.),Canada,Broad Market,EWC,iShares MSCI Canada ETF,0.50%
+Americas (Ex-U.S.),Chile,Broad Market,ECH,iShares MSCI Chile ETF,0.59%
+Americas (Ex-U.S.),Mexico,Broad Market,EWW,iShares MSCI Mexico ETF,0.50%
+Americas (Ex-U.S.),Peru,Broad Market,EPU,iShares MSCI Peru and Global Exposure ETF,0.59%
+Middle East & Africa,Israel,Broad Market,EIS,iShares MSCI Israel ETF,0.59%
+Middle East & Africa,Kuwait,Broad Market,KWT,iShares MSCI Kuwait ETF,0.75%
+Middle East & Africa,Qatar,Broad Market,QAT,iShares MSCI Qatar ETF,0.60%
+Middle East & Africa,Saudi Arabia,Broad Market,KSA,iShares MSCI Saudi Arabia ETF,0.75%
+Middle East & Africa,South Africa,Broad Market,EZA,iShares MSCI South Africa ETF,0.59%
+Middle East & Africa,Turkey,Broad Market,TUR,iShares MSCI Turkey ETF,0.59%
+Middle East & Africa,United Arab Emirates,Broad Market,UAE,iShares MSCI UAE ETF,0.59%

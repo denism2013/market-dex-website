@@ -1,0 +1,463 @@
+{
+  "schema": "market-dex.explore-config.v1",
+  "csv_source": "User supplied ishares_single_country_etfs.csv",
+  "coordinate_basis": "Representative country latitude/longitude; markers are not exchange locations. Hong Kong and Taiwan shown as separate market exposures.",
+  "global_funds": [
+    {
+      "symbol": "EWA",
+      "country": "Australia",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Australia ETF",
+      "lat": -25.27,
+      "lon": 133.78
+    },
+    {
+      "symbol": "MCHI",
+      "country": "China",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI China ETF",
+      "lat": 35.86,
+      "lon": 104.2
+    },
+    {
+      "symbol": "FXI",
+      "country": "China",
+      "region": "Asia-Pacific",
+      "segment": "Large-Cap",
+      "name": "iShares China Large-Cap ETF",
+      "lat": 35.86,
+      "lon": 104.2
+    },
+    {
+      "symbol": "CNYA",
+      "country": "China",
+      "region": "Asia-Pacific",
+      "segment": "A-Shares",
+      "name": "iShares MSCI China A ETF",
+      "lat": 35.86,
+      "lon": 104.2
+    },
+    {
+      "symbol": "ECNS",
+      "country": "China",
+      "region": "Asia-Pacific",
+      "segment": "Small-Cap",
+      "name": "iShares MSCI China Small-Cap ETF",
+      "lat": 35.86,
+      "lon": 104.2
+    },
+    {
+      "symbol": "EWH",
+      "country": "Hong Kong",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Hong Kong ETF",
+      "lat": 22.32,
+      "lon": 114.17
+    },
+    {
+      "symbol": "INDA",
+      "country": "India",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI India ETF",
+      "lat": 20.59,
+      "lon": 78.96
+    },
+    {
+      "symbol": "SMIN",
+      "country": "India",
+      "region": "Asia-Pacific",
+      "segment": "Small-Cap",
+      "name": "iShares MSCI India Small-Cap ETF",
+      "lat": 20.59,
+      "lon": 78.96
+    },
+    {
+      "symbol": "EIDO",
+      "country": "Indonesia",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Indonesia ETF",
+      "lat": -0.79,
+      "lon": 113.92
+    },
+    {
+      "symbol": "EWJ",
+      "country": "Japan",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Japan ETF",
+      "lat": 36.2,
+      "lon": 138.25
+    },
+    {
+      "symbol": "HEWJ",
+      "country": "Japan",
+      "region": "Asia-Pacific",
+      "segment": "Currency Hedged",
+      "name": "iShares Currency Hedged MSCI Japan ETF",
+      "lat": 36.2,
+      "lon": 138.25
+    },
+    {
+      "symbol": "SCJ",
+      "country": "Japan",
+      "region": "Asia-Pacific",
+      "segment": "Small-Cap",
+      "name": "iShares MSCI Japan Small-Cap ETF",
+      "lat": 36.2,
+      "lon": 138.25
+    },
+    {
+      "symbol": "EWM",
+      "country": "Malaysia",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Malaysia ETF",
+      "lat": 4.21,
+      "lon": 101.98
+    },
+    {
+      "symbol": "ENZL",
+      "country": "New Zealand",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI New Zealand ETF",
+      "lat": -40.9,
+      "lon": 174.89
+    },
+    {
+      "symbol": "EPHE",
+      "country": "Philippines",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Philippines ETF",
+      "lat": 12.88,
+      "lon": 121.77
+    },
+    {
+      "symbol": "EWS",
+      "country": "Singapore",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Singapore ETF",
+      "lat": 1.35,
+      "lon": 103.82
+    },
+    {
+      "symbol": "EWY",
+      "country": "South Korea",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI South Korea ETF",
+      "lat": 35.91,
+      "lon": 127.77
+    },
+    {
+      "symbol": "EWT",
+      "country": "Taiwan",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Taiwan ETF",
+      "lat": 23.7,
+      "lon": 120.96
+    },
+    {
+      "symbol": "THD",
+      "country": "Thailand",
+      "region": "Asia-Pacific",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Thailand ETF",
+      "lat": 15.87,
+      "lon": 100.99
+    },
+    {
+      "symbol": "EWO",
+      "country": "Austria",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Austria ETF",
+      "lat": 47.52,
+      "lon": 14.55
+    },
+    {
+      "symbol": "EWK",
+      "country": "Belgium",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Belgium ETF",
+      "lat": 50.5,
+      "lon": 4.47
+    },
+    {
+      "symbol": "EDEN",
+      "country": "Denmark",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Denmark ETF",
+      "lat": 56.26,
+      "lon": 9.5
+    },
+    {
+      "symbol": "EFNL",
+      "country": "Finland",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Finland ETF",
+      "lat": 61.92,
+      "lon": 25.75
+    },
+    {
+      "symbol": "EWQ",
+      "country": "France",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI France ETF",
+      "lat": 46.23,
+      "lon": 2.21
+    },
+    {
+      "symbol": "EWG",
+      "country": "Germany",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Germany ETF",
+      "lat": 51.17,
+      "lon": 10.45
+    },
+    {
+      "symbol": "EIRL",
+      "country": "Ireland",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Ireland ETF",
+      "lat": 53.14,
+      "lon": -7.69
+    },
+    {
+      "symbol": "EWI",
+      "country": "Italy",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Italy ETF",
+      "lat": 41.87,
+      "lon": 12.57
+    },
+    {
+      "symbol": "EWN",
+      "country": "Netherlands",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Netherlands ETF",
+      "lat": 52.13,
+      "lon": 5.29
+    },
+    {
+      "symbol": "ENOR",
+      "country": "Norway",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Norway ETF",
+      "lat": 60.47,
+      "lon": 8.47
+    },
+    {
+      "symbol": "EPOL",
+      "country": "Poland",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Poland ETF",
+      "lat": 51.92,
+      "lon": 19.15
+    },
+    {
+      "symbol": "EWP",
+      "country": "Spain",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Spain ETF",
+      "lat": 40.46,
+      "lon": -3.75
+    },
+    {
+      "symbol": "EWD",
+      "country": "Sweden",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Sweden ETF",
+      "lat": 60.13,
+      "lon": 18.64
+    },
+    {
+      "symbol": "EWL",
+      "country": "Switzerland",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Switzerland ETF",
+      "lat": 46.82,
+      "lon": 8.23
+    },
+    {
+      "symbol": "EWU",
+      "country": "United Kingdom",
+      "region": "Europe",
+      "segment": "Broad Market",
+      "name": "iShares MSCI United Kingdom ETF",
+      "lat": 55.38,
+      "lon": -3.44
+    },
+    {
+      "symbol": "EWUS",
+      "country": "United Kingdom",
+      "region": "Europe",
+      "segment": "Small-Cap",
+      "name": "iShares MSCI United Kingdom Small-Cap ETF",
+      "lat": 55.38,
+      "lon": -3.44
+    },
+    {
+      "symbol": "EWZ",
+      "country": "Brazil",
+      "region": "Americas (Ex-U.S.)",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Brazil ETF",
+      "lat": -14.24,
+      "lon": -51.93
+    },
+    {
+      "symbol": "EWZS",
+      "country": "Brazil",
+      "region": "Americas (Ex-U.S.)",
+      "segment": "Small-Cap",
+      "name": "iShares MSCI Brazil Small-Cap ETF",
+      "lat": -14.24,
+      "lon": -51.93
+    },
+    {
+      "symbol": "EWC",
+      "country": "Canada",
+      "region": "Americas (Ex-U.S.)",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Canada ETF",
+      "lat": 56.13,
+      "lon": -106.35
+    },
+    {
+      "symbol": "ECH",
+      "country": "Chile",
+      "region": "Americas (Ex-U.S.)",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Chile ETF",
+      "lat": -35.68,
+      "lon": -71.54
+    },
+    {
+      "symbol": "EWW",
+      "country": "Mexico",
+      "region": "Americas (Ex-U.S.)",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Mexico ETF",
+      "lat": 23.63,
+      "lon": -102.55
+    },
+    {
+      "symbol": "EPU",
+      "country": "Peru",
+      "region": "Americas (Ex-U.S.)",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Peru and Global Exposure ETF",
+      "lat": -9.19,
+      "lon": -75.02
+    },
+    {
+      "symbol": "EIS",
+      "country": "Israel",
+      "region": "Middle East & Africa",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Israel ETF",
+      "lat": 31.05,
+      "lon": 34.85
+    },
+    {
+      "symbol": "KWT",
+      "country": "Kuwait",
+      "region": "Middle East & Africa",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Kuwait ETF",
+      "lat": 29.31,
+      "lon": 47.48
+    },
+    {
+      "symbol": "QAT",
+      "country": "Qatar",
+      "region": "Middle East & Africa",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Qatar ETF",
+      "lat": 25.35,
+      "lon": 51.18
+    },
+    {
+      "symbol": "KSA",
+      "country": "Saudi Arabia",
+      "region": "Middle East & Africa",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Saudi Arabia ETF",
+      "lat": 23.89,
+      "lon": 45.08
+    },
+    {
+      "symbol": "EZA",
+      "country": "South Africa",
+      "region": "Middle East & Africa",
+      "segment": "Broad Market",
+      "name": "iShares MSCI South Africa ETF",
+      "lat": -30.56,
+      "lon": 22.94
+    },
+    {
+      "symbol": "TUR",
+      "country": "Turkey",
+      "region": "Middle East & Africa",
+      "segment": "Broad Market",
+      "name": "iShares MSCI Turkey ETF",
+      "lat": 38.96,
+      "lon": 35.24
+    },
+    {
+      "symbol": "UAE",
+      "country": "United Arab Emirates",
+      "region": "Middle East & Africa",
+      "segment": "Broad Market",
+      "name": "iShares MSCI UAE ETF",
+      "lat": 23.42,
+      "lon": 53.85
+    }
+  ],
+  "ratio_symbols": [
+    "SPY",
+    "RSP",
+    "QQQ",
+    "IWM",
+    "XLY",
+    "XLP",
+    "HYG",
+    "LQD",
+    "SMH",
+    "GLD",
+    "TLT",
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "GOOGL",
+    "META",
+    "TSLA"
+  ],
+  "index_funds": {
+    "SPY": "S&P 500",
+    "DIA": "Dow Jones 30"
+  }
+}

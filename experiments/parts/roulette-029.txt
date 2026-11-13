@@ -1,0 +1,1360 @@
+ i < cols.length; i++) { let c = 0; const a = cols[i]; for (let t = 0; t < T; t++) if (a[t] > 0) c++; if (c >= Math.min(60, T * 0.2)) keep.push(i); }
+  if (keep.length < 20 || T < 20) throw new Error('Need at least 20 stocks and 20 dates in the file.');
+  const sec = i => (sectors && sectors[i]) || 'Unknown';
+  keep.sort((i, j) => { const a = sec(i), b = sec(j); return a < b ? -1 : a > b ? 1 : (tickers[i] < tickers[j] ? -1 : 1); });
+  const Sn = keep.length, px = new Float32Array(Sn * T);
+  keep.forEach((src, k) => px.set(cols[src], k * T));
+  return {
+    dates, T, S: Sn, px,
+    tickers: keep.map(i => String(tickers[i])),
+    names: keep.map(i => (names && names[i]) || ''),
+    sectors: keep.map(sec),
+    label: opts.label, demo: !!opts.demo,
+  };
+}
+function parseJSON(text) {
+  const j = JSON.parse(text);
+  if (!Array.isArray(j.dates) || !Array.isArray(j.tickers) || !Array.isArray(j.prices)) throw new Error('Unrecognised JSON. Expected dates, tickers and prices.');
+  const T = j.dates.length;
+  const cols = j.prices.map(arr => { const f = new Float32Array(T); for (let t = 0; t < T; t++) { const v = arr[t]; f[t] = (v == null || v === '') ? NaN : +v; } return f; });
+  return { dates: j.dates, tickers: j.tickers, names: j.names, sectors: j.sectors, cols };
+}
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.length);
+  const head = lines[0].split(',');
+  let start = 1; const pick = [], tickers = [];
+  if (head[0].trim() === 'Price' && lines.length > 3) {
+    const tk = lines[1].split(','); start = 3;
+    for (let j = 1; j < head.length; j++) if (head[j].trim() === 'Close') { pick.push(j); tickers.push(tk[j].trim()); }
+  } else {
+    for (let j = 1; j < head.length; j++) { pick.push(j); tickers.push(head[j].trim().replace(/^"|"$/g, '')); }
+  }
+  const dates = [], cols = tickers.map(() => []);
+  for (let i = start; i < lines.length; i++) {
+    const p = lines[i].split(',');
+    if (!p[0] || !/^\d{4}-\d{2}-\d{2}/.test(p[0].trim())) continue;
+    dates.push(p[0].trim());
+    pick.forEach((j, k) => { const v = parseFloat(p[j]); cols[k].push(isNaN(v) ? NaN : v); });
+  }
+  return { dates, tickers, names: null, sectors: null, cols: cols.map(c => Float32Array.from(c)) };
+}
+
+/* simulated demo: one market factor + sector factors + noise, with calm and stressed regimes */
+function makeDemo() {
+  const rng = mulberry32(20241106);
+  const gauss = () => { let u = 0; while (!u) u = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng()); };
+  const dates = [];
+  for (let d = Date.UTC(2019, 0, 2); d <= Date.UTC(2025, 11, 31); d += 864e5) { const w = new Date(d).getUTCDay(); if (w !== 0 && w !== 6) dates.push(new Date(d).toISOString().slice(0, 10)); }
+  const T = dates.length, Sn = 500, K = 11;
+  const SECT = ['Communication Services', 'Consumer Discretionary', 'Consumer Staples', 'Energy', 'Financials', 'Health Care', 'Industrials', 'Information Technology', 'Materials', 'Real Estate', 'Utilities'];
+  const regime = d => {
+    if (d >= '2020-02-24' && d <= '2020-04-17') return [0.032, -0.002, 1.5];
+    if (d > '2020-04-17' && d <= '2020-06-30') return [0.014, 0.003, 1.2];
+    if (d >= '2022-01-03' && d <= '2022-10-14') return [0.014, -0.0007, 1.0];
+    if (d >= '2024-08-01' && d <= '2024-08-09') return [0.024, -0.002, 1.2];
+    if (d >= '2025-04-02' && d <= '2025-04-30') return [0.028, -0.001, 1.3];
+    return [0.0075, 0.0004, 1.0];
+  };
+  const beta = [], gam = [], sig = [], sec = [], ipo = [];
+  for (let i = 0; i < Sn; i++) { beta.push(0.6 + 0.8 * rng()); gam.push(0.5 + 0.7 * rng()); sig.push(0.009 + 0.009 * rng()); sec.push(i % K); ipo.push(0); }
+  for (let q = 0; q < 11; q++) ipo[Math.floor(rng() * Sn)] = 1200;
+  const cols = []; for (let i = 0; i < Sn; i++) { const f = new Float32Array(T); f[0] = 40 + 160 * rng(); cols.push(f); }
+  for (let t = 1; t < T; t++) {
+    const d = dates[t], [mv, dr, im] = regime(d);
+    let m = dr + mv * gauss(), calmDay = false;
+    if (d === '2024-11-06') { m = 0.021; calmDay = true; }
+    const sf = []; for (let k = 0; k < K; k++) sf.push(0.005 * gauss());
+    for (let i = 0; i < Sn; i++) {
+      const r = beta[i] * m + gam[i] * sf[sec[i]] + sig[i] * im * (calmDay ? 0.7 : 1) * gauss();
+      cols[i][t] = cols[i][t - 1] * Math.max(0.5, 1 + r);
+    }
+  }
+  for (let i = 0; i < Sn; i++) if (ipo[i]) for (let t = 0; t < ipo[i]; t++) cols[i][t] = NaN;
+  const tickers = cols.map((_, i) => 'DEMO' + String(i + 1).padStart(3, '0'));
+  return finalizeData({ dates, tickers, names: tickers.map((_, i) => 'Simulated stock ' + (i + 1)), sectors: sec.map(k => SECT[k]), cols }, { label: 'Simulated demo data', demo: true });
+}
+
+/* ---------- built-in prices (filled in when the file is generated with data) ---------- */
+let EMBED = null;
+// built-in data is stored gzip-compressed (base64) to keep the file small; plain JSON also works
+async function unpack(txt) {
+  txt = (txt || '').trim(); if (!txt) return null;
+  if (txt[0] === '{') return txt;
+  if (txt.startsWith('H4sI')) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('This browser is too old to unpack the built-in prices. Update it, or load sp500_prices.json from the Data tab.');
+    const bin = Uint8Array.from(atob(txt), c => c.charCodeAt(0));
+    return await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }
+  return null;
+}
+async function loadEmbedded() {
+  const el = $('#embedded'); let txt = null;
+  try { txt = await unpack(el ? el.textContent : ''); } catch (e) { toast(e.message, true); }
+  if (el) el.textContent = '';
+  if (!txt) return null;
+  try { const d = finalizeData(parseJSON(txt), { label: 'Yahoo Finance prices (built in)', demo: false }); d.builtin = true; return d; }
+  catch (e) { return null; }
+}
+
+/* ---------- saved data (IndexedDB, optional) ---------- */
+const idb = {
+  open() { return new Promise((res, rej) => { const r = indexedDB.open('spx-coin-stacks', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  async get(k) { const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  async set(k, v) { const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); q.onsuccess = () => res(); q.onerror = () => rej(q.error); }); },
+  async del(k) { const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv', 'readwrite').objectStore('kv').delete(k); q.onsuccess = () => res(); q.onerror = () => rej(q.error); }); },
+};
+async function loadSaved() {
+  try { if (typeof indexedDB === 'undefined') return null; return await Promise.race([idb.get('data'), new Promise(r => setTimeout(() => r(null), 900))]); } catch (e) { return null; }
+}
+
+/* ---------- window, validity, stats ---------- */
+function computeStats() {
+  const d = S.data, T = d.T, px = d.px, Sn = d.S, a = S.a, b = S.b;
+  const lo = Math.max(a - 1, 0), valid = new Uint8Array(Sn), list = [];
+  for (let s = 0; s < Sn; s++) { let ok = true; for (let t = lo; t <= b; t++) { if (!(px[s * T + t] > 0)) { ok = false; break; } } if (ok) { valid[s] = 1; list.push(s); } }
+  S.valid = valid; S.list = list; S.R = null; S.stats = null;
+  const t0 = Math.max(a, 1), m = b - t0 + 1, N = list.length; S.m = Math.max(m, 0);
+  if (m < 5 || N < 10) return;
+  const R = new Float32Array(N * m), bs = new Float64Array(m);
+  let sumSig = 0, sumSig2 = 0;
+  for (let j = 0; j < N; j++) {
+    const s = list[j]; let mean = 0;
+    for (let k = 0; k < m; k++) { const r = px[s * T + t0 + k] / px[s * T + t0 + k - 1] - 1; R[j * m + k] = r; mean += r; bs[k] += r / N; }
+    mean /= m; let v = 0;
+    for (let k = 0; k < m; k++) { const x = R[j * m + k] - mean; v += x * x; }
+    const sg = Math.sqrt(v / (m - 1)); sumSig += sg; sumSig2 += sg * sg;
+  }
+  let bm = 0; for (let k = 0; k < m; k++) bm += bs[k]; bm /= m;
+  let bv = 0; for (let k = 0; k < m; k++) { const x = bs[k] - bm; bv += x * x; } bv /= (m - 1);
+  const den = sumSig * sumSig - sumSig2;
+  S.R = R;
+  S.stats = { m, N, single: (sumSig / N) * SQ252, all: Math.sqrt(bv) * SQ252, corr: den > 0 ? clamp((N * N * bv - sumSig2) / den, -1, 1) : NaN };
+}
+function subsetVol() {
+  if (!S.stats || !S.R) return NaN;
+  const { m } = S, R = S.R, list = S.list; let c = 0; const bs = new Float64Array(m);
+  for (let j = 0; j < list.length; j++) if (S.sub[list[j]]) { c++; for (let k = 0; k < m; k++) bs[k] += R[j * m + k]; }
+  if (!c) return NaN;
+  let mean = 0; for (let k = 0; k < m; k++) { bs[k] /= c; mean += bs[k]; } mean /= m;
+  let v = 0; for (let k = 0; k < m; k++) { const x = bs[k] - mean; v += x * x; }
+  return Math.sqrt(v / (m - 1)) * SQ252;
+}
+function rebuildSubset() {
+  const N = S.list.length;
+  if (!S.subsetN || S.subsetN >= N) { S.sub = S.valid; S.subCount = N; S.subActive = false; }
+  else {
+    const rng = mulberry32(S.seed * 7919 + 13), idx = S.list.slice();
+    for (let i = 0; i < S.subsetN; i++) { const j = i + Math.floor(rng() * (N - i)); const t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+    const sub = new Uint8Array(S.data.S); for (let i = 0; i < S.subsetN; i++) sub[idx[i]] = 1;
+    S.sub = sub; S.subCount = S.subsetN; S.subActive = true;
+  }
+}
+
+let curveToken = 0;
+async function computeCurve() {
+  const token = ++curveToken; S.curve = null; $('#pin').disabled = true; drawChart();
+  const st = S.stats; if (!st || !S.R) return;
+  const R = S.R, m = S.m, N = st.N;
+  const sizes = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377].filter(n => n < N).concat([N]);
+  const rng = mulberry32(7), idx = new Int32Array(N); for (let i = 0; i < N; i++) idx[i] = i;
+  const sum = new Float64Array(m), vols = [];
+  for (const n of sizes) {
+    const draws = n === N ? 1 : Math.max(6, Math.min(80, Math.floor(6e6 / (n * m)))); let acc = 0;
+    for (let q = 0; q < draws; q++) {
+      if (n < N) for (let i = 0; i < n; i++) { const j = i + Math.floor(rng() * (N - i)); const t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+      sum.fill(0);
+      for (let i = 0; i < n; i++) { const base = idx[i] * m; for (let k = 0; k < m; k++) sum[k] += R[base + k]; }
+      let mean = 0; for (let k = 0; k < m; k++) mean += sum[k]; mean /= m;
+      let v = 0; for (let k = 0; k < m; k++) { const x = sum[k] - mean; v += x * x; }
+      acc += Math.sqrt(v / (m - 1)) / n * SQ252;
+    }
+    vols.push(acc / draws);
+    await new Promise(r => setTimeout(r, 0)); if (token !== curveToken) return;
+  }
+  S.curve = { sizes, vols, N }; $('#pin').disabled = false; drawChart();
+}
+
+/* ---------- window handling ---------- */
+function bestFrame() {
+  if (S.mode === 'cum') return S.n - 1;
+  const d = S.data, T = d.T, px = d.px; let best = 0, bv = -1;
+  for (let f = 0; f < S.n; f++) {
+    const t = S.a + f; if (t < 1) continue; let sum = 0, c = 0;
+    for (const s of S.list) { sum += px[s * T + t] / px[s * T + t - 1] - 1; c++; }
+    const v = c ? Math.abs(sum / c) : 0; if (v > bv) { bv = v; best = f; }
+  }
+  return best;
+}
+function autoMult(f) {
+  const d = S.data, T = d.T, px = d.px, t = S.a + f; if (t < 1 || !S.list.length) return 16;
+  let sum = 0; for (const s of S.list) sum += px[s * T + t] / px[s * T + t - 1] - 1;
+  return clamp(Math.floor(0.5 / Math.max(Math.abs(sum / S.list.length), 1e-4)), 1, 16);
+}
+function setWindow(a, b, o = {}) {
+  const d = S.data, T = d.T; a = clamp(a, 0, T - 1); b = clamp(b, a, T - 1);
+  S.a = a; S.b = b; S.n = b - a + 1; S.chip = o.chip || null;
+  S.label = o.label || `${fmtShort(d.dates[a])} to ${fmtShort(d.dates[b])}`;
+  S.playing = false; setPlayIcon();
+  computeStats(); rebuildSubset(); computeWeights(); computeScale(); setScale(); computeSeries(); computeHist(); applyLayout();
+  $('#from').value = d.dates[a]; $('#to').value = d.dates[b];
+  const scrub = $('#scrub'); scrub.max = S.n - 1; scrub.disabled = S.n < 2;
+  markChips();
+  const f = o.focus ? clamp(lowerBound(d.dates, o.focus) - a, 0, S.n - 1) : bestFrame();
+  if (S.mode === 'daily' && !S.multUser) { S.mult = autoMult(f); syncViewControls(); }
+  S.pos = f; hideTip(); setFrame(f); updateSubSlider(); renderStats(); computeCurve();
+}
+function applyRange(key) {
+  const d = S.data, v = RANGES.find(r => r[0] === key)[1], end = d.T - 1; let a;
+  if (v === -1) a = Math.max(0, lowerBound(d.dates, d.dates[end].slice(0, 4) + '-01-01') - 1);
+  else a = v ? lowerBound(d.dates, addMonths(d.dates[end], -v)) : 0;
+  setWindow(a, end, { chip: 'r:' + key, label: key === 'All' ? 'All available data' : key === 'YTD' ? 'Year to date' : 'Last ' + key });
+}
+const evEnd = ev => ev.to === 'end' ? S.data.dates[S.data.T - 1] : ev.to;
+const covered = ev => ev.from >= S.data.dates[0] && evEnd(ev) <= S.data.dates[S.data.T - 1];
+function applyEvent(ev) {
+  if (!covered(ev)) return false;
+  const d = S.data;
+  setWindow(lowerBound(d.dates, ev.from), upperBound(d.dates, evEnd(ev)), { chip: 'e:' + ev.id, label: ev.label, focus: ev.focus });
+  return true;
+}
+function buildChips() {
+  const r = $('#ranges'); r.innerHTML = '';
+  for (const [k] of RANGES) { const b = document.createElement('button'); b.className = 'chip'; b.textContent = k; b.dataset.chip = 'r:' + k; b.onclick = () => applyRange(k); r.appendChild(b); }
+  const e = $('#events'); e.innerHTML = '';
+  const list = EVENTS.filter(covered);
+  if (!list.length) e.innerHTML = '<span class="info">None of the preset episodes fall inside this data.</span>';
+  for (const ev of list) { const b = document.createElement('button'); b.className = 'chip'; b.textContent = ev.label; b.dataset.chip = 'e:' + ev.id; b.onclick = () => applyEvent(ev); e.appendChild(b); }
+}
+function markChips() { $$('[data-chip]').forEach(b => b.setAttribute('aria-pressed', b.dataset.chip === S.chip ? 'true' : 'false')); }
+
+/* ---------- frame targets and overlay ---------- */
+function computeTargets() {
+  const d = S.data, T = d.T, px = d.px, t = S.a + S.frame, a = S.a, m = cmode() ? 1 : S.mult, kc = S.kc, cm = cmode();
+  let capped = 0;
+  for (let s = 0; s < G.Sn; s++) {
+    if (!S.valid[s]) { G.tgtH[s] = 0; G.tgtT[s] = 0; G.tgtD[s] = 0; G.lastR[s] = 0; G.lastC[s] = 0; continue; }
+    const r = S.mode === 'daily' ? (t >= 1 ? px[s * T + t] / px[s * T + t - 1] - 1 : 0) : px[s * T + t] / px[s * T + a] - 1;
+    G.lastR[s] = r;
+    let h;
+    if (cm) { const c = S.w0[s] > 0 ? S.w0[s] * r * 100 : 0; G.lastC[s] = c; h = COIN * Math.abs(c) / kc; }
+    else { h = COIN * coinsFor(100 * (1 + m * r)); if (S.mode === 'daily' && h > MAXH) { capped++; h = MAXH; } }
+    G.tgtH[s] = Math.max(2 * COIN, h); G.tgtD[s] = S.sub[s] ? 0 : 1;
+  }
+  S.capped = capped;
+}
+// the "market" a stock is compared with: the S&P reference (actual if loaded, else calculated from the stocks)
+function marketRet() {
+  const v = S.refVals; if (v && v.idx != null) return v.idx;
+  const g = S.gains; if (!g) return 0;
+  return S.mode === 'cum' ? (g.cw ? g.cw.ret : g.mean) : (v && v.eq != null ? v.eq : 0);
+}
+// green = beats the market, yellow = up but trails it, red = down
+function computeTints() {
+  if (!G || !S.valid) return;
+  const idx = marketRet(), scale = S.mode === 'daily' ? 0.03 : 0.25;
+  for (let s = 0; s < G.Sn; s++) {
+    if (!S.valid[s]) { G.tgtT[s] = 0; continue; }
+    const r = G.lastR[s];
+    G.tgtT[s] = r > idx ? 1.2 + 0.8 * clamp((r - idx) / scale, 0, 1) : r >= 0 ? clamp(r / scale, 0, 1) : -(0.5 + 0.5 * clamp(-r / scale, 0, 1));
+  }
+}
+function updateOverlay() {
+  const d = S.data, t = S.a + S.frame;
+  $('#date').textContent = fmtDate(d.dates[t]);
+  let sum = 0, up = 0, c = 0;
+  for (let s = 0; s < G.Sn; s++) if (S.sub[s]) { sum += G.lastR[s]; if (G.lastR[s] > 0) up++; c++; }
+  const mv = c ? sum / c : 0, cls = v => v >= 0 ? 'up' : 'down', g = S.gains;
+  if (S.mode === 'cum' && g && !S.subActive) {
+    const sp = S.refVals && !S.refVals.approx && S.refVals.idx != null ? S.refVals.idx : null;
+    $('#daystat').innerHTML = (sp != null ? `S&amp;P <span class="${cls(sp)}">${pct(sp, 1)}</span> \u00b7 ` : g.cw ? `Cap-weighted <span class="${cls(g.cw.ret)}">${pct(g.cw.ret, 0)}</span> \u00b7 ` : '') + `${g.cw ? 'equal' : 'Equal-weight'} <span class="${cls(g.mean)}">${pct(g.mean, 0)}</span> \u00b7 median <span class="${cls(g.med)}">${pct(g.med, 0)}</span>`;
+  } else {
+    $('#daystat').innerHTML = c ? `<span class="${cls(mv)}">${pct(mv, 2)}</span> basket${S.mode === 'cum' ? ' since start' : ''} \u00b7 ${Math.round(100 * up / c)}% of stocks up` : '';
+  }
+  $('#sceneLabel').textContent = S.mode === 'cum' ? (cmode() ? `Index contribution \u00b7 1 chip = ${S.kc} pt` : (logMode() ? `$100 on every number \u00b7 log scale (\u00d72 = +${Math.round(100 * S.mLog)} chips)` : `$100 on every number \u00b7 1 chip = $${S.kc}`) + (S.mult > 1 ? ` \u00b7 moves ${S.mult}\u00d7 taller` : ''))
+    : "Each day's move, " + (S.mult === 1 ? 'true scale' : S.mult + '\u00d7 taller') + (S.capped ? ` \u00b7 ${S.capped} capped` : '');
+  const N = S.list.length;
+  $('#meta').innerHTML = `${d.S >= 400 ? 'S&amp;P 500 stocks' : 'S&amp;P 500 sample'}<b>${S.subActive ? S.subCount + ' of ' + N : N}</b>each<b>$100</b>`;
+  $('#demoPill').hidden = !d.demo;
+}
+function setFrame(f) {
+  S.frame = clamp(f, 0, S.n - 1);
+  computeTargets(); S.gains = gainsAt(S.frame); computeRefLevel(); updateRings(); computeRefBars(); updateRefBars(); computeTints(); computeHotCold(); updateHot(); updateBoard(); placeDolly(); chooseLogos(); positionLogos(); updateSectorLabels(); updateOverlay(); renderGains();
+  $('#scrub').value = S.frame; markDirty();
+  if (S.sel >= 0 && $('#tip').style.display === 'block') showTip(S.sel);
+}
+
+
+/* ---------- market-cap weights, scale, layout ---------- */
+let SHARE_MAP = {}, BASE_SHARES = {};
+function applyShares(d) {
+  const arr = new Float64Array(d.S).fill(NaN); let c = 0;
+  for (let s = 0; s < d.S; s++) { const v = SHARE_MAP[d.tickers[s]]; if (v > 0) { arr[s] = v; c++; } }
+  d.shares = c >= 20 ? arr : null; d.nShares = c;
+}
+function loadEmbeddedShares() {
+  const el = $('#embeddedShares'), txt = el ? el.textContent.trim() : '';
+  try { if (txt && txt[0] === '{') BASE_SHARES = JSON.parse(txt); } catch (e) { BASE_SHARES = {}; }
+  if (el) el.textContent = '';
+  SHARE_MAP = { ...BASE_SHARES };
+}
+let CAP_HIST = null, BASE_CAP_HIST = null;
+// stocks whose Yahoo share counts are clearly wrong (e.g. SKYD implies 6B shares for a company that never had them)
+const CAP_EXCLUDE = new Set(['SKYD', 'PCG']);
+async function loadEmbeddedCaps() {
+  const el = $('#embeddedCaps'); let txt = null;
+  try { txt = await unpack(el ? el.textContent : ''); } catch (e) { /* optional data */ }
+  try { if (txt) BASE_CAP_HIST = JSON.parse(txt); } catch (e) { BASE_CAP_HIST = null; }
+  if (el) el.textContent = '';
+  CAP_HIST = BASE_CAP_HIST;
+}
+function applyCapHist(d) {
+  d.capHist = null; d.capNotes = [];
+  if (!CAP_HIST) return;
+  const snaps = []; CAP_HIST.dates.forEach((x, k) => { const ds = String(x).slice(0, 10), i = upperBound(d.dates, ds); if (i >= 0 && ds <= d.dates[d.T - 1]) snaps.push([i, k]); });
+  snaps.sort((p, q) => p[0] - q[0]);
+  const idx = [], src = [];
+  for (const [i, k] of snaps) { if (idx.length && idx[idx.length - 1] === i) src[src.length - 1] = k; else { idx.push(i); src.push(k); } }
+  if (idx.length < 3) return;
+  const M = idx.length, caps = new Float64Array(d.S * M).fill(NaN); let c = 0;
+  for (let s = 0; s < d.S; s++) {
+    const arr = CAP_HIST.caps[d.tickers[s]]; if (!arr) continue; c++;
+    for (let m = 0; m < M; m++) { const v = arr[src[m]]; if (v > 0) caps[s * M + m] = v; }
+    // sanity: if the implied share count is more than 4x away from today's, the share data is wrong for that month
+    let last = -1; for (let m = M - 1; m >= 0; m--) if (caps[s * M + m] > 0) { last = m; break; }
+    if (last < 1) continue;
+    const pl = d.px[s * d.T + idx[last]], cl = caps[s * M + last]; let cut = 0;
+    if (!(pl > 0)) continue;
+    for (let m = 0; m < last; m++) {
+      const v = caps[s * M + m], pk = d.px[s * d.T + idx[m]]; if (!(v > 0 && pk > 0)) continue;
+      const r = v / (cl * pk / pl); if (r > 4 || r < 0.25) { caps[s * M + m] = -1; cut++; }
+    }
+    if (cut) d.capNotes.push(`${d.tickers[s]} (${cut} months)`);
+  }
+  if (c >= 20) d.capHist = { idx: Int32Array.from(idx), M, caps, n: c };
+}
+function applyCaps(d) {
+  applyShares(d); applyCapHist(d);
+  d.capExcl = new Uint8Array(d.S); d.capLeftOut = [];
+  for (let s = 0; s < d.S; s++) if (CAP_EXCLUDE.has(d.tickers[s])) { d.capExcl[s] = 1; d.capLeftOut.push(d.tickers[s]); }
+  d.hasCap = !!(d.shares || d.capHist);
+}
+// market cap of stock s on day t: monthly history if we have it (scaled to the exact day), else today's shares x price
+function capAt(s, t) {
+  const d = S.data, T = d.T, px = d.px, h = d.capHist;
+  if (d.capExcl && d.capExcl[s]) return NaN;
+  if (h) {
+    const m = h.idx; let lo = 0, hi = m.length;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (m[mid] <= t) lo = mid + 1; else hi = mid; }
+    const k = lo - 1;
+    if (k >= 0) { const c = h.caps[s * h.M + k]; if (c > 0) return c * px[s * T + t] / px[s * T + m[k]]; if (c === -1) return NaN; }
+  }
+  const sh = d.shares ? d.shares[s] : NaN;
+  return sh > 0 ? sh * px[s * T + t] : NaN;
+}
+function updateCapInfo() {
+  const d = S.data;
+  let txt = d.capHist ? `Market caps: monthly history for ${d.capHist.n} of ${d.S} stocks${d.shares ? ', today\u2019s share counts for the rest' : ''}.`
+    : d.shares ? `Market caps: ${d.nShares} of ${d.S} stocks (today\u2019s share counts applied to past prices, so weights are approximate).`
+    : 'No market caps for this data, so index-weighted figures are hidden.';
+  if (d.hasCap && d.capLeftOut && d.capLeftOut.length) txt += ` Left out of the weights because their share counts look wrong: ${d.capLeftOut.join(', ')}.`;
+  if (d.capNotes && d.capNotes.length) txt += ` Ignored as unreliable: ${d.capNotes.join(', ')}.`;
+  $('#capInfo').textContent = txt;
+}
+const KSTEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+const cmode = () => S.mode === 'cum' && S.metric === 'contrib' && !!S.w0;
+function computeWeights() {
+  const d = S.data; S.w0 = null; if (!d.hasCap || !S.list.length) return;
+  const w = new Float64Array(d.S); let tot = 0, cnt = 0;
+  for (const s of S.list) { const c = capAt(s, S.a); if (c > 0) { w[s] = c; tot += c; cnt++; } }
+  if (cnt < 20) return;
+  for (const s of S.list) w[s] /= tot;
+  S.w0 = w;
+}
+const logMode = () => S.mode === 'cum' && S.metric === 'price' && S.scale === 'log';
+// coins for a stack worth v dollars per $100 invested; the log scale compresses everything above $100
+function coinsFor(v) { v = Math.max(0, v); return logMode() && v > 100 ? 100 * (1 + S.mLog * Math.log2(v / 100)) : v / S.kc; }
+function computeScale() {
+  S.kc = 1; S.maxV = 100; S.maxC = 0; S.maxCoins = 100; S.mLog = 0.5;
+  if (S.mode !== 'cum' || !S.list.length) return;
+  const d = S.data, T = d.T, px = d.px, a = S.a;
+  if (cmode()) {
+    let mx = 0;
+    for (const s of S.list) { const w = S.w0[s]; if (!(w > 0)) continue; const p0 = px[s * T + a]; for (let t = a + 1; t <= S.b; t++) { const c = Math.abs(w * (px[s * T + t] / p0 - 1)) * 100; if (c > mx) mx = c; } }
+    S.maxC = mx; S.maxCoins = 0; S.kc = [0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50].find(k => mx / k <= 300) || 50; return;
+  }
+  let mx = 100;
+  for (const s of S.list) { const p0 = px[s * T + a]; for (let t = a + 1; t <= S.b; t++) { const v = 100 * (1 + S.mult * (px[s * T + t] / p0 - 1)); if (v > mx) mx = v; } }
+  S.maxV = mx;
+  if (logMode()) { S.kc = 1; const lg = Math.log2(mx / 100); S.mLog = lg > 4 ? 2 / lg : 0.5; S.maxCoins = coinsFor(mx); }
+  else { S.kc = KSTEPS.find(k => mx / k <= 280) || 5000; S.maxCoins = mx / S.kc; }
+}
+function setScale() {
+  if (!G) return;
+  const cm = cmode();
+  G.plane.position.y = G.planeEdge.position.y = COIN * 100 / S.kc;
+  G.plane.visible = G.planeEdge.visible = $('#plane').checked && !cm;
+  if (!cam.moved) cam.ty = S.mode === 'cum' ? clamp(COIN * (cm ? S.maxC / S.kc : S.maxCoins) * 0.1, 1, 8) : BASE * 0.95;
+  placeBreakEven(); updateLoss(); markDirty();
+}
+function applyLayout() {
+  if (!G || !S.data) return;
+  const d = S.data, T = d.T, px = d.px, a = S.a, b = S.b, Sn = G.Sn, cm = cmode();
+  const { cols, rows, off, offX, offZ } = G;
+  if (S.layout === 'sector') {
+    const L = sectorLayout();
+    for (let s = 0; s < Sn; s++) { offX[s] = off[s * 2] = L.pos[s * 2]; offZ[s] = off[s * 2 + 1] = L.pos[s * 2 + 1]; }
+    G.extW = L.extW; G.extD = L.extD; buildSectorBoxes(L);
+  } else {
+    const all = Array.from({ length: Sn }, (_, s) => s);
+    const end = s => { const r = px[s * T + b] / px[s * T + a] - 1; return cm ? (S.w0[s] || 0) * r : r; };
+    let order = all;
+    if (S.layout === 'rank') {
+      order = all.filter(s => S.valid[s]).sort((x, y) => end(y) - end(x)).concat(all.filter(s => !S.valid[s]));
+    } else if (S.layout === 'cap' && d.hasCap) {
+      const cap = s => capAt(s, a);
+      order = all.filter(s => S.valid[s] && cap(s) > 0).sort((x, y) => cap(y) - cap(x))
+        .concat(all.filter(s => S.valid[s] && !(cap(s) > 0)).sort((x, y) => end(y) - end(x)), all.filter(s => !S.valid[s]));
+    }
+    for (let k = 0; k < Sn; k++) { const s = order[k], c = k % cols, r = Math.floor(k / cols); offX[s] = off[s * 2] = c - (cols - 1) / 2; offZ[s] = off[s * 2 + 1] = r - (rows - 1) / 2; }
+    G.extW = cols; G.extD = rows; G.tileGroup.visible = false;
+  }
+  const sx = (G.extW + 1) / (cols + 1), sz = (G.extD + 1) / (rows + 1);
+  G.plane.scale.set(sx, 1, sz); G.planeEdge.scale.set(sx, 1, sz);
+  G.aOff.needsUpdate = true; buildTable(); layoutHot(); fitCamera(); updateRings(); updateLoss(); positionLogos(); placeBreakEven(); markDirty();
+}
+
+
+/* ---------- groupings: sector boxes with icons ---------- */
+const SECTORS = {
+  'Information Technology': { short: 'Technology', color: '#6aa7ff', glyph: 'chip' },
+  'Communication Services': { short: 'Communication', color: '#b58cff', glyph: 'bubble' },
+  'Consumer Discretionary': { short: 'Discretionary', color: '#ff9f6a', glyph: 'bag' },
+  'Consumer Staples': { short: 'Staples', color: '#8fd18b', glyph: 'cart' },
+  'Energy': { short: 'Energy', color: '#ffb84d', glyph: 'drop' },
+  'Financials': { short: 'Financials', color: '#5ed6c1', glyph: 'dollar' },
+  'Health Care': { short: 'Health care', color: '#ff7fa8', glyph: 'cross' },
+  'Industrials': { short: 'Industrials', color: '#c0c6d6', glyph: 'gear' },
+  'Materials': { short: 'Materials', color: '#d9c27a', glyph: 'flask' },
+  'Real Estate': { short: 'Real estate', color: '#7fc4e8', glyph: 'house' },
+  'Utilities': { short: 'Utilities', color: '#e8e07a', glyph: 'bolt' },
+};
+const sectorInfo = k => SECTORS[k] || { short: k || 'Other', color: '#9aa2c7', glyph: 'dot' };
+const planeUnit = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), edgesUnit = new THREE.EdgesGeometry(planeUnit);
+function clearGroup(grp) { if (!grp) return; while (grp.children.length) { const c = grp.children.pop(); if (c.material) { if (c.material.map) c.material.map.dispose(); c.material.dispose(); } } }
+function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function drawGlyph(g, kind, cx, cy, r, color) {
+  g.save(); g.strokeStyle = color; g.fillStyle = color; g.lineWidth = r * 0.14; g.lineJoin = 'round'; g.lineCap = 'round';
+  const P = pts => { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(cx + r * x, cy + r * y) : g.moveTo(cx + r * x, cy + r * y)); };
+  switch (kind) {
+    case 'chip':
+      rr(g, cx - r * .55, cy - r * .55, r * 1.1, r * 1.1, r * .12); g.stroke(); rr(g, cx - r * .22, cy - r * .22, r * .44, r * .44, 3); g.fill();
+      for (const q of [-.3, .3]) { g.beginPath(); g.moveTo(cx + r * q, cy - r * .55); g.lineTo(cx + r * q, cy - r * .85); g.moveTo(cx + r * q, cy + r * .55); g.lineTo(cx + r * q, cy + r * .85); g.moveTo(cx - r * .55, cy + r * q); g.lineTo(cx - r * .85, cy + r * q); g.moveTo(cx + r * .55, cy + r * q); g.lineTo(cx + r * .85, cy + r * q); g.stroke(); } break;
+    case 'bubble': rr(g, cx - r * .85, cy - r * .65, r * 1.7, r * 1.15, r * .3); g.stroke(); P([[-.3, .5], [-.45, .9], [.05, .5]]); g.stroke(); break;
+    case 'bag': P([[-.7, -.3], [.7, -.3], [.6, .85], [-.6, .85]]); g.closePath(); g.stroke(); g.beginPath(); g.arc(cx, cy - r * .3, r * .38, Math.PI, 0); g.stroke(); break;
+    case 'cart': P([[-.95, -.7], [-.6, -.7], [-.3, .35], [.7, .35], [.9, -.35], [-.5, -.35]]); g.stroke(); for (const q of [-.2, .55]) { g.beginPath(); g.arc(cx + r * q, cy + r * .72, r * .13, 0, 7); g.fill(); } break;
+    case 'drop': g.beginPath(); g.moveTo(cx, cy - r * .95); g.bezierCurveTo(cx + r * .9, cy - r * .1, cx + r * .75, cy + r * .85, cx, cy + r * .85); g.bezierCurveTo(cx - r * .75, cy + r * .85, cx - r * .9, cy - r * .1, cx, cy - r * .95); g.stroke(); break;
+    case 'dollar': g.beginPath(); g.arc(cx, cy, r * .85, 0, 7); g.stroke(); g.font = `700 ${r * 1.2}px Inter, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('$', cx, cy + r * .05); break;
+    case 'cross': P([[-.25, -.85], [.25, -.85], [.25, -.25], [.85, -.25], [.85, .25], [.25, .25], [.25, .85], [-.25, .85], [-.25, .25], [-.85, .25], [-.85, -.25], [-.25, -.25]]); g.closePath(); g.stroke(); break;
+    case 'gear': g.beginPath(); g.arc(cx, cy, r * .5, 0, 7); g.stroke(); g.lineWidth = r * .24; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; g.beginPath(); g.moveTo(cx + Math.cos(a) * r * .6, cy + Math.sin(a) * r * .6); g.lineTo(cx + Math.cos(a) * r * .92, cy + Math.sin(a) * r * .92); g.stroke(); } break;
+    case 'flask': P([[-.28, -.9], [-.28, -.2], [-.8, .75], [.8, .75], [.28, -.2], [.28, -.9]]); g.stroke(); P([[-.45, -.9], [.45, -.9]]); g.stroke(); break;
+    case 'house': P([[-.95, -.05], [0, -.85], [.95, -.05]]); g.stroke(); P([[-.65, -.1], [-.65, .8], [.65, .8], [.65, -.1]]); g.stroke(); g.beginPath(); g.rect(cx - r * .17, cy + r * .2, r * .34, r * .6); g.stroke(); break;
+    case 'bolt': P([[.25, -.95], [-.55, .1], [-.02, .1], [-.25, .95], [.55, -.15], [.02, -.15]]); g.closePath(); g.stroke(); break;
+    default: g.beginPath(); g.arc(cx, cy, r * .5, 0, 7); g.fill();
+  }
+  g.restore();
+}
+// each sector becomes a rectangular block of stacks, packed in rows with a gap between blocks
+function sectorLayout() {
+  const d = S.data, Sn = G.Sn, groups = new Map();
+  for (let s = 0; s < Sn; s++) { const k = d.sectors[s] || 'Other'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); }
+  const blocks = [...groups].map(([k, arr]) => { const w = Math.max(2, Math.round(Math.sqrt(arr.length * 1.15))); return { k, arr, w, h: Math.ceil(arr.length / w) }; }).sort((p, q) => q.arr.length - p.arr.length);
+  const area = blocks.reduce((a, b) => a + (b.w + 1) * (b.h + 1), 0), Wmax = Math.ceil(Math.sqrt(area) * (camera.aspect >= 1 ? 1.35 : 0.9));
+  let x = 0, z = 0, rowH = 0, extW = 0;
+  for (const b of blocks) { if (x > 0 && x + b.w > Wmax) { x = 0; z += rowH + 1; rowH = 0; } b.x0 = x; b.z0 = z; x += b.w + 1; rowH = Math.max(rowH, b.h); extW = Math.max(extW, b.x0 + b.w); }
+  const extD = z + rowH, ox = (extW - 1) / 2, oz = (extD - 1) / 2, pos = new Float32Array(Sn * 2);
+  for (const b of blocks) b.arr.forEach((s, i) => { pos[s * 2] = b.x0 + (i % b.w) - ox; pos[s * 2 + 1] = b.z0 + Math.floor(i / b.w) - oz; });
+  return { pos, extW, extD, blocks: blocks.map(b => ({ k: b.k, arr: b.arr, w: b.w, h: b.h, cx: b.x0 + (b.w - 1) / 2 - ox, cz: b.z0 + (b.h - 1) / 2 - oz })) };
+}
+function buildSectorBoxes(L) {
+  const grp = G.tileGroup; clearGroup(grp); G.labels = [];
+  for (const b of L.blocks) {
+    const info = sectorInfo(b.k), col = new THREE.Color(info.color);
+    const tile = new THREE.Mesh(planeUnit, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.13, side: THREE.DoubleSide, depthWrite: false }));
+    tile.scale.set(b.w + 0.7, 1, b.h + 0.7); tile.position.set(b.cx, 0.012, b.cz); grp.add(tile);
+    const edge = new THREE.LineSegments(edgesUnit, new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.65 }));
+    edge.scale.copy(tile.scale); edge.position.copy(tile.position); grp.add(edge);
+    const cv = document.createElement('canvas'); cv.width = 640; cv.height = 160;
+    const tex = new THREE.CanvasTexture(cv), sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+    const Wd = clamp(b.w * 1.05, 4.2, 7.2); sp.scale.set(Wd, Wd / 4, 1); sp.position.set(b.cx, 1.2, b.cz + b.h / 2 + 0.55); sp.renderOrder = 20; grp.add(sp);
+    G.labels.push({ b, info, cv, tex, txt: '' });
+  }
+  grp.visible = true; updateSectorLabels(true);
+}
+let labelTimer = 0, labelLast = 0;
+function updateSectorLabels(force) {
+  if (!G || S.layout !== 'sector' || !G.labels.length || !G.tileGroup.visible) return;
+  const now = performance.now();
+  if (!force && now - labelLast < 150) { clearTimeout(labelTimer); labelTimer = setTimeout(() => updateSectorLabels(true), 170); return; }
+  labelLast = now; const cm = cmode();
+  for (const L of G.labels) {
+    let sum = 0, n = 0, c = 0;
+    for (const s of L.b.arr) if (S.valid[s]) { sum += G.lastR[s]; c += G.lastC[s]; n++; }
+    const avg = n ? sum / n : 0, up = cm ? c >= 0 : avg >= 0;
+    const txt = !n ? '\u2014' : cm ? `${c >= 0 ? '+' : '\u2212'}${Math.abs(c).toFixed(1)} pts` : pct(avg, Math.abs(avg) >= 0.1 ? 0 : 1);
+    const key = txt + '|' + n; if (key === L.txt) continue; L.txt = key;
+    const g = L.cv.getContext('2d'), w = L.cv.width, h = L.cv.height; g.clearRect(0, 0, w, h);
+    g.fillStyle = 'rgba(3,18,12,.88)'; rr(g, 6, 6, w - 12, h - 12, 28); g.fill();
+    g.lineWidth = 5; g.strokeStyle = L.info.color; rr(g, 6, 6, w - 12, h - 12, 28); g.stroke();
+    drawGlyph(g, L.info.glyph, 86, 80, 40, L.info.color);
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillStyle = '#e6e9fb'; g.font = '700 50px Inter, system-ui, sans-serif'; g.fillText(L.info.short, 152, 76);
+    g.font = '500 38px "JetBrains Mono", ui-monospace, monospace'; g.fillStyle = up ? '#f0c85a' : '#ff6b5e'; g.fillText(txt, 152, 124);
+    L.tex.needsUpdate = true; markDirty();
+  }
+}
+function makeTagSprite(text, color) {
+  const cv = document.createElement('canvas'); cv.width = 520; cv.height = 96; const g = cv.getContext('2d');
+  g.fillStyle = 'rgba(3,18,12,.82)'; rr(g, 4, 4, 512, 88, 20); g.fill(); g.strokeStyle = color; g.lineWidth = 4; rr(g, 4, 4, 512, 88, 20); g.stroke();
+  g.fillStyle = '#e6e9fb'; g.font = '600 42px "JetBrains Mono", ui-monospace, monospace'; g.textBaseline = 'middle'; g.fillText(text, 26, 50);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
+  sp.scale.set(5.2, 0.96, 1); sp.renderOrder = 15; return sp;
+}
+function placeBreakEven() { positionBreakEven(); }
+// keep the "$100 break-even" tag next to the front-left corner of the line, clamped so it stays on screen
+function positionBreakEven() {
+  const el = $('#beTag'); if (!G || !S.data) { el.hidden = true; return; }
+  const vis = G.plane.visible; el.hidden = !vis; if (!vis) return;
+  const c = proj(-(G.extW + 1) / 2, COIN * 100 / S.kc, (G.extD + 1) / 2);
+  el.style.left = clamp(c[0] + 6, 8, W - el.offsetWidth - 8) + 'px'; el.style.top = clamp(c[1] - 22, 128, H - 140) + 'px';
+}
+// translucent red block from the top of each losing stack up to the break-even line
+const _lm = new THREE.Matrix4(), _lq = new THREE.Quaternion(), _lp = new THREE.Vector3(), _ls = new THREE.Vector3();
+function updateLoss() {
+  if (!G || !S.valid) return;
+  const on = $('#lossOn').checked && !cmode(); G.loss.visible = on; markDirty(); if (!on) return;
+  const base = COIN * 100 / S.kc;
+  for (let s = 0; s < G.Sn; s++) {
+    const h = G.curH[s];
+    if (S.valid[s] && h > 0.001 && h < base - 0.03) { _lp.set(G.offX[s], h, G.offZ[s]); _ls.set(1, base - h, 1); }
+    else { _lp.set(0, -50, 0); _ls.set(1, 0.001, 1); }
+    _lm.compose(_lp, _lq, _ls); G.loss.setMatrixAt(s, _lm);
+  }
+  G.loss.instanceMatrix.needsUpdate = true;
+}
+
+/* ---------- company logos (optional file) ---------- */
+const LOGOS = {}, logoTexCache = new Map();
+const logoTag = tk => LOGOS[tk] ? `<img class="tl" alt="" src="${esc(LOGOS[tk])}">` : '';
+function updateLogoInfo() { const n = Object.keys(LOGOS).length; $('#logoInfo').textContent = n ? `Logos loaded for ${n} stocks.` : 'No logos loaded (optional): see Get real data.'; }
+function applyLogosFile(j) {
+  let c = 0; for (const [k, v] of Object.entries(j || {})) if (typeof v === 'string' && /^(data:image|https?:)/.test(v)) { LOGOS[k.replace('.', '-')] = v; c++; }
+  logoTexCache.clear(); S.hasLogos = Object.keys(LOGOS).length > 0; updateLogoInfo(); return c;
+}
+function logoTexture(tk) {
+  if (logoTexCache.has(tk)) return logoTexCache.get(tk);
+  const uri = LOGOS[tk]; if (!uri) { logoTexCache.set(tk, null); return null; }
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const tex = new THREE.CanvasTexture(cv), img = new Image();
+  img.onload = () => { const g = cv.getContext('2d'); g.clearRect(0, 0, 128, 128); g.fillStyle = '#f3f5ff'; rr(g, 4, 4, 120, 120, 24); g.fill(); const k = Math.min(88 / img.width, 88 / img.height); g.drawImage(img, 64 - img.width * k / 2, 64 - img.height * k / 2, img.width * k, img.height * k); tex.needsUpdate = true; markDirty(); };
+  img.src = uri; logoTexCache.set(tk, tex); return tex;
+}
+function chooseLogos() {
+  S.logoSet = []; if (!G || !S.hasLogos || !S.logoN || !S.valid) return;
+  const cand = []; for (let s = 0; s < G.Sn; s++) if (S.valid[s] && LOGOS[S.data.tickers[s]]) cand.push(s);
+  cand.sort((x, y) => G.tgtH[y] - G.tgtH[x]); S.logoSet = cand.slice(0, S.logoN);
+}
+function positionLogos() {
+  if (!G) return;
+  while (G.logoSprites.length < S.logoSet.length) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false })); sp.renderOrder = 30; sp.visible = false; scene.add(sp); G.logoSprites.push(sp); }
+  G.logoSprites.forEach((sp, i) => {
+    const s = S.logoSet[i]; if (s === undefined) { sp.visible = false; return; }
+    const tex = logoTexture(S.data.tickers[s]); if (!tex) { sp.visible = false; return; }
+    if (sp.material.map !== tex) { sp.material.map = tex; sp.material.needsUpdate = true; }
+    sp.visible = true; sp.scale.set(1.25, 1.25, 1); sp.position.set(G.offX[s], G.curH[s] + 0.85, G.offZ[s]);
+  });
+  markDirty();
+}
+
+
+/* ---------- S&P reference: side bars, level line, tags ---------- */
+const refOn = () => $('#idxBar').checked && !cmode();
+let BENCH_RAW = null, BASE_BENCH = null;
+function applyBench(d) {
+  d.bench = null; if (!BENCH_RAW) return;
+  const keys = BENCH_RAW.series ? Object.keys(BENCH_RAW.series) : [];
+  if (keys.length && !keys.includes(S.benchKey)) S.benchKey = keys.includes('^GSPC') ? '^GSPC' : keys.includes('SPY') ? 'SPY' : keys[0];
+  const ser = BENCH_RAW.series ? BENCH_RAW.series[S.benchKey] : BENCH_RAW.prices;
+  if (!ser) return;
+  const map = new Map(BENCH_RAW.dates.map((x, i) => [String(x).slice(0, 10), i]));
+  const b = new Float64Array(d.T).fill(NaN); let c = 0;
+  for (let t = 0; t < d.T; t++) { const i = map.get(d.dates[t]); if (i !== undefined && ser[i] > 0) { b[t] = ser[i]; c++; } }
+  if (c > d.T * 0.5) { d.bench = b; d.benchName = BENCH_RAW.series ? S.benchKey : 'index'; d.benchKeys = keys; }
+}
+function updateBenchInfo() {
+  const d = S.data, row = $('#benchRow');
+  if (d && d.bench) {
+    $('#benchInfo').textContent = d.benchName === 'SPY' ? 'S&P 500 reference: SPY, which includes dividends like your stock prices.'
+      : d.benchName === '^GSPC' ? 'S&P 500 reference: the S&P 500 price index, as shown on Yahoo. It leaves out dividends, which your stock prices include.' : `S&P 500 reference: actual ${d.benchName} prices.`;
+    row.hidden = !(d.benchKeys && d.benchKeys.includes('^GSPC') && d.benchKeys.includes('SPY'));
+    $$('#benchRow button').forEach(b => b.setAttribute('aria-pressed', b.dataset.bk === d.benchName ? 'true' : 'false'));
+  } else { $('#benchInfo').textContent = 'S&P 500 reference: calculated from the stocks using their market-cap weights (approximate).'; row.hidden = true; }
+}
+function loadEmbeddedBench() { const el = $('#embeddedBench'); try { const x = el ? el.textContent.trim() : ''; if (x && x[0] === '{') BASE_BENCH = JSON.parse(x); } catch (e) { BASE_BENCH = null; } if (el) el.textContent = ''; BENCH_RAW = BASE_BENCH; }
+function loadEmbeddedLogos() { const el = $('#embeddedLogos'); try { const x = el ? el.textContent.trim() : ''; if (x && x[0] === '{') applyLogosFile(JSON.parse(x)); } catch (e) { /* optional */ } if (el) el.textContent = ''; }
+function computeRefBars() {
+  const g = S.gains, d = S.data; S.refVals = null; if (!g) return;
+  const t = S.a + S.frame, a = S.a, bench = d.bench;
+  if (S.mode === 'cum') {
+    let idx = null, approx = false;
+    if (bench && bench[a] > 0 && bench[t] > 0) idx = bench[t] / bench[a] - 1; else if (g.cw) { idx = g.cw.ret; approx = true; }
+    S.refVals = { idx, eq: g.mean, med: g.med, approx };
+  } else {
+    const list = S.list, N = list.length; if (!N) return;
+    const arr = new Float64Array(N); let sum = 0;
+    for (let j = 0; j < N; j++) { arr[j] = G.lastR[list[j]]; sum += arr[j]; }
+    const so = Float64Array.from(arr).sort(), med = N % 2 ? so[(N - 1) / 2] : (so[N / 2 - 1] + so[N / 2]) / 2;
+    let idx = null, approx = false;
+    if (bench && t >= 1 && bench[t - 1] > 0 && bench[t] > 0) idx = bench[t] / bench[t - 1] - 1;
+    else if (d.hasCap && t >= 1) { let tot = 0, acc = 0; for (const s of list) { const c = capAt(s, t - 1); if (c > 0) { tot += c; acc += c * G.lastR[s]; } } if (tot > 0) { idx = acc / tot; approx = true; } }
+    S.refVals = { idx, eq: sum / N, med, approx };
+  }
+}
+let refTagEls = null;
+function updateRefBars() {
+  if (!G) return;
+  const on = refOn() && !!S.refVals, v = S.refVals, m = S.mult, dg = S.mode === 'cum' ? 0 : 2;
+  const rets = on ? [v.idx, v.eq, v.med] : [null, null, null];
+  G.barT = rets.map(r => r == null ? null : COIN * coinsFor(100 * (1 + m * r)));
+  const names = [v && v.approx ? 'S&P\u2248' : (S.data.benchName === 'SPY' ? 'S&P TR' : 'S&P'), 'Avg', 'Median'], cols = ['#7fd4ff', '#b9a7ff', '#dfe3f5'];
+  if (!refTagEls) { refTagEls = [0, 1, 2].map(() => { const el = document.createElement('div'); el.className = 'rtag'; el.hidden = true; $('#refTags').appendChild(el); return el; }); }
+  refTagEls.forEach((el, i) => { const r = rets[i]; el.hidden = r == null; if (r == null) return; el.style.setProperty('--rc', r < 0 ? '#ff6b5e' : cols[i]); el.textContent = `${names[i]} ${pct(r, dg)}`; });
+  G.refGroup.visible = on;
+  G.refBars.forEach((b, i) => { b.visible = on && G.barT[i] != null; b.material.color.set(rets[i] != null && rets[i] < 0 ? 0xff6b5e : b.userData.col); });
+  if (G.refOnPrev !== on) { G.refOnPrev = on; if (!cam.moved) { cam.tx = on && camera.aspect >= 1 ? -2.4 : 0; fitCamera(); } }
+  if (!on) { G.idxPlane.visible = G.idxEdge.visible = false; }
+  applyRefMeshes(); markDirty();
+}
+// wide screens: bars stand beside the field; phones: a podium in front of it, so it never falls off the edge
+function refPos(i) {
+  const b = G.refBars[i];
+  if (camera.aspect >= 1) return [-(G.extW + 1) / 2 - 2.4, b.userData.z];
+  return [[-1.6, 0.4, 2.2][i], (G.extD + 1) / 2 + 0.9];
+}
+function applyRefMeshes() {
+  if (!G) return;
+  G.refBars.forEach((b, i) => { const h = Math.max(G.barC[i], 0.02), q = refPos(i); b.position.set(q[0], 0, q[1]); b.scale.set(b.userData.r, h, b.userData.r); });
+  const line = refOn() && G.barT[0] != null && $('#idxLine').checked;
+  G.idxPlane.visible = G.idxEdge.visible = line;
+  if (line) { const y = Math.max(G.barC[0], 0.02); G.idxPlane.position.y = G.idxEdge.position.y = y; G.idxPlane.scale.set(G.extW + 1, 1, G.extD + 1); G.idxEdge.scale.copy(G.idxPlane.scale); }
+}
+function positionRefTags() {
+  if (!refTagEls || !G || !refOn()) return;
+  const items = [];
+  refTagEls.forEach((el, i) => { if (el.hidden) return; const q = refPos(i), c = proj(q[0], G.barC[i] + 0.5, q[1]), w = el.offsetWidth; items.push({ el, x: clamp(c[0] - w / 2, 6, W - w - 6), y: clamp(c[1] - 30, 125, H - 150) }); });
+  items.sort((p, q) => p.y - q.y);
+  for (let i = 1; i < items.length; i++) if (items[i].y - items[i - 1].y < 24) items[i].y = items[i - 1].y + 24;
+  items.forEach(o => { o.el.style.left = o.x + 'px'; o.el.style.top = o.y + 'px'; });
+}
+
+
+/* ---------- roulette: numbered felt table, hot and cold numbers, the wheel ---------- */
+const RED_NUMS = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+const MONO = '"JetBrains Mono", ui-monospace, monospace';
+// every company's number = its size rank in the index (1 = biggest), so the table never reshuffles
+function computeCapRank(d) {
+  const idx = Array.from({ length: d.S }, (_, s) => s), end = d.T - 1;
+  const cap = s => { const c = capAt(s, end); return c > 0 ? c : -1; };
+  idx.sort((a, b) => cap(b) - cap(a) || (d.tickers[a] < d.tickers[b] ? -1 : 1));
+  d.capRank = new Int32Array(d.S); idx.forEach((s, i) => { d.capRank[s] = i + 1; });
+}
+function drawFelt(cv, ppu, ew, ed) {
+  const g = cv.getContext('2d'), w = cv.width, h = cv.height, d = S.data;
+  const grd = g.createRadialGradient(w / 2, h * 0.5, 20, w / 2, h / 2, Math.max(w, h) * 0.72);
+  grd.addColorStop(0, '#14804f'); grd.addColorStop(1, '#0a4b2f'); g.fillStyle = grd; g.fillRect(0, 0, w, h);
+  g.globalAlpha = 0.05; for (let i = 0; i < 6000; i++) { g.fillStyle = i % 2 ? '#fff' : '#000'; g.fillRect(Math.random() * w, Math.random() * h, 1.6, 1.6); } g.globalAlpha = 1;
+  g.strokeStyle = '#d9b25a'; g.lineWidth = Math.max(3, ppu * 0.05); g.strokeRect(ppu * 0.35, ppu * 0.35, w - ppu * 0.7, h - ppu * 0.7);
+  g.lineWidth = Math.max(1.5, ppu * 0.02); g.strokeRect(ppu * 0.5, ppu * 0.5, w - ppu, h - ppu);
+  for (let s = 0; s < G.Sn; s++) {
+    const cx = (G.offX[s] + ew / 2) * ppu, cy = (G.offZ[s] + ed / 2) * ppu, x0 = cx - ppu / 2, y0 = cy - ppu / 2, num = d.capRank[s];
+    g.fillStyle = RED_NUMS.has(((num - 1) % 36) + 1) ? '#8c1222' : '#0c100f'; g.fillRect(x0 + 2, y0 + 2, ppu - 4, ppu - 4);
+    g.strokeStyle = 'rgba(245,238,220,.9)'; g.lineWidth = Math.max(1.5, ppu * 0.025); g.strokeRect(x0 + 2, y0 + 2, ppu - 4, ppu - 4);
+    g.fillStyle = '#f5eedc'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const tk = d.tickers[s]; let fs = ppu * 0.3; g.font = `700 ${fs}px ${MONO}`; const mw = g.measureText(tk).width;
+    if (mw > ppu * 0.82) { fs *= ppu * 0.82 / mw; g.font = `700 ${fs}px ${MONO}`; }
+    g.fillText(tk, cx, cy + ppu * 0.1);
+    g.font = `500 ${Math.round(ppu * 0.17)}px ${MONO}`; g.fillStyle = 'rgba(245,238,220,.7)'; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillText(String(num), x0 + ppu * 0.1, y0 + ppu * 0.08);
+  }
+  g.fillStyle = '#e0b85a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `800 ${Math.round(ppu * 0.5)}px "Playfair Display", Georgia, serif`;
+  g.fillText('PLACE YOUR BETS', w / 2, h - ppu * 1.05);
+}
+function buildTable() {
+  if (!G || !S.data || !S.data.capRank) return;
+  const ew = G.extW + 3.4, ed = G.extD + 3.4, ppu = Math.max(24, Math.min(96, Math.floor(2048 / Math.max(ew, ed))));
+  let hs = 0; for (let s = 0; s < G.Sn; s++) hs = (hs * 31 + Math.round(G.offX[s] * 4) * 7 + Math.round(G.offZ[s] * 4)) | 0;
+  const key = ew + '|' + ed + '|' + hs; if (G.tableKey === key) return; G.tableKey = key;
+  const grp = G.tableGroup; grp.children.forEach(c => c.userData.own && c.geometry.dispose()); clearGroup(grp);
+  const cv = document.createElement('canvas'); cv.width = Math.ceil(ew * ppu); cv.height = Math.ceil(ed * ppu); drawFelt(cv, ppu, ew, ed);
+  const tex = new THREE.CanvasTexture(cv); tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  const felt = new THREE.Mesh(new THREE.PlaneGeometry(ew, ed).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tex }));
+  felt.position.y = -0.005; felt.userData.own = true; grp.add(felt);
+  const wood = new THREE.MeshLambertMaterial({ color: 0x4a2310 }), brass = new THREE.MeshBasicMaterial({ color: 0xd9b25a }), rw = 1.1, rh = 0.7;
+  const box = (bw, bh, bd, x, y, z, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), mat); m.position.set(x, y, z); m.userData.own = true; grp.add(m); };
+  box(ew + 2 * rw, rh, rw, 0, rh / 2, -(ed / 2 + rw / 2), wood); box(ew + 2 * rw, rh, rw, 0, rh / 2, ed / 2 + rw / 2, wood);
+  box(rw, rh, ed, -(ew / 2 + rw / 2), rh / 2, 0, wood); box(rw, rh, ed, ew / 2 + rw / 2, rh / 2, 0, wood);
+  box(ew, 0.07, 0.07, 0, rh, -ed / 2, brass); box(ew, 0.07, 0.07, 0, rh, ed / 2, brass); box(0.07, 0.07, ed, -ew / 2, rh, 0, brass); box(0.07, 0.07, ed, ew / 2, rh, 0, brass);
+  markDirty();
+}
+const _hm = new THREE.Matrix4(), _hq = new THREE.Quaternion(), _hp = new THREE.Vector3(), _hs = new THREE.Vector3(0.94, 1, 0.94), _hcol = new THREE.Color();
+function layoutHot() {
+  if (!G) return;
+  for (let s = 0; s < G.Sn; s++) { _hp.set(G.offX[s], 0.025, G.offZ[s]); _hm.compose(_hp, _hq, _hs); G.hot.setMatrixAt(s, _hm); }
+  G.hot.instanceMatrix.needsUpdate = true; markDirty();
+}
+// hot numbers = the biggest moves up, cold numbers = the biggest moves down (this period, or this day in the daily view)
+function computeHotCold() {
+  const list = S.list; if (!G || !list || !list.length) { S.hc = null; return; }
+  const order = list.slice().sort((x, y) => G.lastR[y] - G.lastR[x]);
+  S.hc = { order };
+}
+function updateHot() {
+  if (!G || !S.hc) return;
+  _hcol.setRGB(0, 0, 0); for (let s = 0; s < G.Sn; s++) G.hot.setColorAt(s, _hcol);
+  const o = S.hc.order, n = Math.min(12, Math.floor(o.length / 2));
+  for (let i = 0; i < n; i++) { const k = 0.4 + 0.6 * (1 - i / n); _hcol.setRGB(0.95 * k, 0.68 * k, 0.12 * k); G.hot.setColorAt(o[i], _hcol); }
+  for (let i = 0; i < n; i++) { const k = 0.4 + 0.6 * (1 - i / n); _hcol.setRGB(0.1 * k, 0.3 * k, 0.6 * k); G.hot.setColorAt(o[o.length - 1 - i], _hcol); }
+  G.hot.instanceColor.needsUpdate = true; markDirty();
+}
+function updateBoard() {
+  const hc = S.hc, d = S.data; if (!hc || !hc.order.length) { $('#hotList').textContent = ''; $('#coldList').textContent = ''; return; }
+  const mk = (s, cls) => { const r = G.lastR[s]; return `<span class="${cls}">#${d.capRank[s]} ${esc(d.tickers[s])} ${pct(r, Math.abs(r) >= 0.1 ? 0 : 1)}</span>`; };
+  const o = hc.order;
+  $('#hotList').innerHTML = o.slice(0, 3).map(s => mk(s, 'beat')).join(' \u00b7 ');
+  $('#coldList').innerHTML = o.slice(-3).reverse().map(s => mk(s, 'down')).join(' \u00b7 ');
+}
+function placeDolly() {
+  if (!G || !G.dolly) return; const s = S.hc ? S.hc.order[0] : undefined;
+  G.dolly.visible = s !== undefined && !!S.valid[s] && G.curH[s] > 0.01; if (!G.dolly.visible) return;
+  G.dolly.position.set(G.offX[s], G.curH[s] + 0.95, G.offZ[s]); markDirty();
+}
+// the wheel: pockets are the 36 hottest numbers plus 0 (the S&P) and 00 (the median stock)
+const WHEEL_ORDER = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, 37, 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2];
+let wheelRot = 0, wheelBall = { a: 0, r: 0.84 }, wheelBusy = false;
+function wheelPockets() {
+  const d = S.data, o = S.hc ? S.hc.order : [], rv = S.refVals;
+  return WHEEL_ORDER.map(v => {
+    if (v === 0) return { v: '0', house: true, name: 'S&P 500', ret: marketRet() };
+    if (v === 37) return { v: '00', house: true, name: 'The median stock', ret: rv ? rv.med : (S.gains ? S.gains.med : 0) };
+    const s = o[v - 1]; return { v: String(v), s, name: s === undefined ? '' : d.names[s], tk: s === undefined ? '' : d.tickers[s], ret: s === undefined ? 0 : G.lastR[s] };
+  });
+}
+function drawWheel() {
+  const cv = $('#wheel'); if (!cv || !cv.offsetParent || !S.data) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), sz = cv.clientWidth; if (!sz) return;
+  cv.width = cv.height = Math.round(sz * dpr); const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, sz, sz);
+  const c = sz / 2, R = sz / 2 - 3, P = wheelPockets(), n = P.length, step = 2 * Math.PI / n, inner = R * 0.4, outer = R * 0.74;
+  g.beginPath(); g.arc(c, c, R, 0, 7); g.fillStyle = '#4a2310'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#d9b25a'; g.stroke();
+  g.beginPath(); g.arc(c, c, R * 0.88, 0, 7); g.fillStyle = '#1b0f08'; g.fill();
+  P.forEach((p, i) => {
+    const mid = wheelRot + i * step, a0 = mid - Math.PI / 2 - step / 2, a1 = a0 + step;
+    g.beginPath(); g.arc(c, c, outer, a0, a1); g.arc(c, c, inner, a1, a0, true); g.closePath();
+    g.fillStyle = p.house ? '#0b6b3a' : RED_NUMS.has(+p.v) ? '#a3121f' : '#101311'; g.fill(); g.lineWidth = 1; g.strokeStyle = 'rgba(217,178,90,.8)'; g.stroke();
+    g.save(); g.translate(c, c); g.rotate(mid); g.fillStyle = '#f5eedc'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `600 ${Math.max(7, Math.round(R * 0.085))}px ${MONO}`; g.fillText(p.v, 0, -(outer + inner) / 2 - R * 0.02); g.restore();
+  });
+  const hub = g.createRadialGradient(c, c, 2, c, c, inner * 0.9); hub.addColorStop(0, '#f6dc92'); hub.addColorStop(1, '#a8802a');
+  g.beginPath(); g.arc(c, c, inner * 0.9, 0, 7); g.fillStyle = hub; g.fill(); g.strokeStyle = 'rgba(40,24,6,.7)'; g.lineWidth = 2;
+  for (let i = 0; i < 4; i++) { const a = wheelRot + i * Math.PI / 2; g.beginPath(); g.moveTo(c + Math.cos(a) * inner * 0.2, c + Math.sin(a) * inner * 0.2); g.lineTo(c + Math.cos(a) * inner * 0.85, c + Math.sin(a) * inner * 0.85); g.stroke(); }
+  const bx = c + Math.sin(wheelBall.a) * R * wheelBall.r, by = c - Math.cos(wheelBall.a) * R * wheelBall.r;
+  g.beginPath(); g.arc(bx, by, Math.max(3, R * 0.035), 0, 7); g.fillStyle = '#fffaf0'; g.fill(); g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 1; g.stroke();
+}
+function spinWheel() {
+  if (wheelBusy || !S.hc || !S.hc.order.length) return;
+  const P = wheelPockets(), n = P.length, step = 2 * Math.PI / n, target = Math.floor(Math.random() * n);
+  const rot0 = wheelRot, rotEnd = rot0 + 2 * Math.PI * (3 + Math.random() * 2), pocketEnd = rotEnd + target * step, ball0 = wheelBall.a;
+  const ballEnd = pocketEnd - 2 * Math.PI * Math.ceil((pocketEnd - ball0 + 2 * Math.PI * 5) / (2 * Math.PI));   // ball circles backwards, then drops into the pocket
+  const dur = 5200, t0 = performance.now(), ease = (x, p) => 1 - Math.pow(1 - x, p);
+  wheelBusy = true; $('#wheelSpin').disabled = true; $('#wheelRes').textContent = 'No more bets\u2026';
+  const frame = now => {
+    const u = Math.min(1, (now - t0) / dur);
+    wheelRot = rot0 + (rotEnd - rot0) * ease(u, 3); wheelBall.a = ball0 + (ballEnd - ball0) * ease(u, 4); wheelBall.r = u < 0.72 ? 0.86 : 0.86 - 0.2 * ((u - 0.72) / 0.28);
+    drawWheel();
+    if (u < 1) { requestAnimationFrame(frame); return; }
+    wheelBusy = false; $('#wheelSpin').disabled = false;
+    const p = P[target], r = p.ret, sign = r >= 0 ? '+' : '\u2212', val = Math.abs(r * 100).toFixed(Math.abs(r) >= 1 ? 0 : 1) + '%';
+    $('#wheelRes').textContent = p.house ? `${p.v}: the house. ${p.name} ${sign}${val}.` : `${p.v}: ${p.tk} ${sign}${val}. ${p.name}, hot number ${p.v}.`;
+    if (p.s !== undefined) showTip(p.s);
+  };
+  requestAnimationFrame(frame);
+}
+$('#wheelSpin').onclick = spinWheel;
+$$('#camSeg button').forEach(b => b.onclick = () => {
+  const top = b.dataset.cam === 'top'; cam.az = top ? 0 : 0.3; cam.el = top ? 1.3 : 0.5; if (top) { cam.moved = true; cam.dist = 60; } else { cam.moved = false; fitCamera(); }
+  $$('#camSeg button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); hideTip(); markDirty();
+});
+
+/* ---------- gains: growth of $100, winners, concentration ---------- */
+function computeSeries() {
+  const d = S.data, T = d.T, px = d.px, a = S.a, n = S.n, list = S.list, N = list.length, sh = d.shares;
+  if (!N || n < 2) { S.series = null; return; }
+  const step = Math.max(1, Math.ceil((n - 1) / 300)), fr = [];
+  for (let f = 0; f < n; f += step) fr.push(f);
+  if (fr[fr.length - 1] !== n - 1) fr.push(n - 1);
+  let w = null;
+  if (d.hasCap) { w = new Float64Array(N); let tot = 0, cnt = 0; for (let j = 0; j < N; j++) { const c = capAt(list[j], a); if (c > 0) { w[j] = c; tot += c; cnt++; } } if (cnt >= 20) for (let j = 0; j < N; j++) w[j] /= tot; else w = null; }
+  const eq = [], med = [], cw = w ? [] : null, buf = new Float64Array(N);
+  for (const f of fr) {
+    const t = a + f; let s = 0, c = 0;
+    for (let j = 0; j < N; j++) { const s0 = list[j], ratio = px[s0 * T + t] / px[s0 * T + a]; buf[j] = ratio; s += ratio; if (w) c += w[j] * ratio; }
+    eq.push(100 * s / N); if (w) cw.push(100 * c);
+    const so = Float64Array.from(buf).sort(); med.push(100 * (N % 2 ? so[(N - 1) / 2] : (so[N / 2 - 1] + so[N / 2]) / 2));
+  }
+  S.series = { fr, eq, med, cw };
+}
+function gainsAt(f) {
+  const d = S.data, T = d.T, px = d.px, a = S.a, t = a + f, sh = d.shares, list = S.list, N = list.length;
+  if (!N) return null;
+  const R = new Float64Array(N), so = new Float64Array(N), w = new Float64Array(N);
+  let sum = 0, up = 0, capSum = 0, nCap = 0;
+  for (let j = 0; j < N; j++) {
+    const s = list[j], r = px[s * T + t] / px[s * T + a] - 1;
+    R[j] = r; so[j] = r; sum += r; if (r > 0) up++;
+    const c = d.hasCap ? capAt(s, a) : NaN;
+    if (c > 0) { w[j] = c; capSum += c; nCap++; }
+  }
+  so.sort();
+  const mean = sum / N, med = N % 2 ? so[(N - 1) / 2] : (so[N / 2 - 1] + so[N / 2]) / 2;
+  let beat = 0; for (let j = 0; j < N; j++) if (R[j] > mean) beat++;
+  const byRet = Array.from({ length: N }, (_, j) => j).sort((x, y) => R[y] - R[x]);
+  const net = sum * 100; let top10 = 0; for (let i = 0; i < Math.min(10, N); i++) top10 += R[byRet[i]] * 100;
+  const g = { t, N, mean, med, up: up / N, beat: beat / N, net, top10Share: net > 0 ? top10 / net : NaN, byRet, R, list, cw: null, capSum };
+  const sa = new Map();
+  for (let j = 0; j < N; j++) { const k = d.sectors[list[j]], e = sa.get(k) || [0, 0]; e[0] += R[j]; e[1]++; sa.set(k, e); }
+  g.secAvg = [...sa].map(([k, [sm, c]]) => [k, sm / c]).sort((x, y) => y[1] - x[1]);
+  if (nCap >= 20) {
+    let ret = 0; const cj = new Float64Array(N);
+    for (let j = 0; j < N; j++) if (w[j] > 0) { w[j] /= capSum; cj[j] = w[j] * R[j]; ret += cj[j]; }
+    const byImp = Array.from({ length: N }, (_, j) => j).filter(j => w[j] > 0).sort((x, y) => cj[y] - cj[x]);
+    const byW = byImp.slice().sort((x, y) => w[y] - w[x]);
+    let w0 = 0, impTop = 0, capT = 0, top10T = 0, beatIdx = 0;
+    for (let j = 0; j < N; j++) { if (w[j] > 0) capT += capAt(list[j], t); if (R[j] > ret) beatIdx++; }
+    for (let i = 0; i < Math.min(10, byW.length); i++) { const j = byW[i]; w0 += w[j]; top10T += capAt(list[j], t); }
+    for (let i = 0; i < Math.min(10, byImp.length); i++) impTop += cj[byImp[i]];
+    const sec = new Map(); for (let j = 0; j < N; j++) if (w[j] > 0) { const k = d.sectors[list[j]]; sec.set(k, (sec.get(k) || 0) + cj[j]); }
+    g.cw = { ret, n: nCap, w, cj, byImp, top10Imp: ret > 0 ? impTop / ret : NaN, w0, w1: capT > 0 ? top10T / capT : NaN, beat: beatIdx / N, sec: [...sec].map(([k, v]) => [k, ret !== 0 ? v / ret : 0]).sort((x, y) => y[1] - x[1]) };
+  }
+  return g;
+}
+function renderGains() {
+  const g = S.gains, cv = $('#gChart'); if (!g || !cv.offsetParent) return;
+  const d = S.data, cls = v => v >= 0 ? 'up' : 'down', p0 = v => pct(v, Math.abs(v) >= 10 ? 0 : 1), mkt = g.cw ? g.cw.ret : g.mean, tier = v => v > mkt ? 'beat' : v >= 0 ? 'up' : 'down';
+  $('#gWin').textContent = `${S.label} \u00b7 ${fmtShort(d.dates[S.a])} to ${fmtShort(d.dates[g.t])} \u00b7 ${g.N} stocks`;
+  const row = (l, v, c) => `<div class="l">${l}</div><div class="v ${c || ''}">${v}</div>`;
+  let h = '';
+  if (g.cw) h += row('Cap-weighted index (approx.)', p0(g.cw.ret), cls(g.cw.ret));
+  h += row('$100 in each stock', p0(g.mean), cls(g.mean));
+  h += row('Median stock', p0(g.med), cls(g.med));
+  h += row('Stocks that are up', Math.round(g.up * 100) + '%');
+  h += row('Stocks that beat the equal-weight average', Math.round(g.beat * 100) + '%');
+  $('#gKpis').innerHTML = h;
+  const lg = [['#e2bd5f', 'Cap-weighted index', !!g.cw], ['#7fa8ff', '$100 in each stock', true], ['#cfd2e8', 'Median stock', true]];
+  $('#gLegend').innerHTML = lg.filter(x => x[2]).map(x => `<span><i style="background:${x[0]}"></i>${x[1]}</span>`).join('');
+  const parts = [];
+  parts.push(isFinite(g.top10Share) ? `With $100 in every stock, the 10 biggest winners made ${Math.round(g.top10Share * 100)}% of the total gain. The median stock gained ${p0(g.med)}.` : `The median stock gained ${p0(g.med)}.`);
+  if (g.cw) parts.push(`In the cap-weighted index, the 10 stocks with the most impact made ${isFinite(g.cw.top10Imp) ? Math.round(g.cw.top10Imp * 100) + '%' : 'n/a'} of its gain. The 10 largest companies at the start made up ${(g.cw.w0 * 100).toFixed(0)}% of the index then and ${(g.cw.w1 * 100).toFixed(0)}% on this date.`);
+  else parts.push('Load market caps (Data tab) to see how much of the gain came from the biggest companies.');
+  $('#gInsight').textContent = parts.join(' ');
+  const imp = $('#rankSeg [data-rank=imp]'); imp.disabled = !g.cw;
+  const by = S.rankBy === 'cold' ? 'cold' : S.rankBy === 'imp' && g.cw ? 'imp' : 'ret';
+  $$('#rankSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.rank === by ? 'true' : 'false'));
+  const idx = (by === 'imp' ? g.cw.byImp : by === 'cold' ? g.byRet.slice().reverse() : g.byRet).slice(0, 10);
+  $('#gList').innerHTML = idx.map((j, i) => {
+    const s = g.list[j], r = g.R[j];
+    const second = by === 'imp' ? (g.cw.ret > 0 ? (Math.round(g.cw.cj[j] / g.cw.ret * 1000) / 10) + '% of gain' : '') : '$100 \u2192 $' + Math.round(100 * (1 + r)).toLocaleString('en-US');
+    return `<button class="lrow" data-s="${s}"><span class="rk">${i + 1}</span><span class="nm">${logoTag(d.tickers[s])}<b>${esc(d.tickers[s])}</b><small>${esc(d.names[s])}</small></span><span class="v ${tier(r)}">${p0(r)}</span><span class="v2">${second}</span></button>`;
+  }).join('');
+  const rows = g.cw ? g.cw.sec : g.secAvg, mx = Math.max(...rows.map(x => Math.abs(x[1])), 1e-9);
+  $('#gSectTitle').textContent = g.cw ? 'Share of the index gain, by sector' : 'Average return, by sector';
+  $('#gSect').innerHTML = rows.map(([k, v]) => `<div class="n">${esc(k)}</div><div class="bar"><i class="${v < 0 ? 'neg' : ''}" style="width:${Math.abs(v) / mx * 100}%"></i></div><div class="p">${g.cw ? Math.round(v * 100) + '%' : p0(v)}</div>`).join('');
+  $('#gNote').textContent = 'Only today\u2019s index members are included, so stocks that joined after a big run flatter the equal-weight figure.' + (g.cw ? ` Index figures are approximate: weights come from ${d.capHist ? 'monthly market-cap history' : 'today\u2019s share counts applied to past prices'}, so they won\u2019t match the official S&P 500 exactly.` : '');
+  $('#gNote').textContent += d.bench ? (d.benchName === 'SPY' ? ' The S&P on the bars is SPY (dividends included).' : ' The S&P on the bars is the price index, as on Yahoo; stock returns here include dividends.') : '';
+  renderDist(g);
+  drawGrowth();
+  drawWheel();
+}
+function drawGrowth() {
+  const cv = $('#gChart'); if (!cv.offsetParent) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  g.font = '10px "JetBrains Mono",ui-monospace,monospace';
+  const se = S.series; if (!se) { g.fillStyle = '#8fa89a'; g.fillText('Pick a period of at least 2 days', 10, 20); return; }
+  const pl = 40, pr = 10, pt = 8, pb = 20, n1 = Math.max(1, S.n - 1);
+  const all = [...se.eq, ...se.med, ...(se.cw || [])];
+  let lo = Math.min(100, ...all), hi = Math.max(100, ...all); const pv = (hi - lo) * 0.06; lo = Math.max(0, lo - pv); hi += pv;
+  const X = f => pl + (w - pl - pr) * f / n1, Y = v => pt + (h - pt - pb) * (1 - (v - lo) / (hi - lo));
+  const raw = (hi - lo) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1, 2, 2.5, 5, 10].map(x => x * mag).find(x => x >= raw) || 10 * mag;
+  g.strokeStyle = 'rgba(224,200,140,.14)'; g.fillStyle = '#8fa89a'; g.lineWidth = 1; g.textAlign = 'right';
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) { const y = Math.round(Y(v)) + .5; g.beginPath(); g.moveTo(pl, y); g.lineTo(w - pr, y); g.stroke(); g.fillText('$' + Math.round(v), pl - 5, y + 3); }
+  g.strokeStyle = 'rgba(207,210,232,.45)'; g.setLineDash([3, 4]); g.beginPath(); g.moveTo(pl, Y(100)); g.lineTo(w - pr, Y(100)); g.stroke(); g.setLineDash([]);
+  const line = (arr, color, lw) => { g.strokeStyle = color; g.lineWidth = lw; g.beginPath(); se.fr.forEach((f, i) => { const x = X(f), y = Y(arr[i]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); };
+  line(se.med, '#cfd2e8', 1.6); line(se.eq, '#7fa8ff', 1.8); if (se.cw) line(se.cw, '#e2bd5f', 2.4);
+  const fi = S.frame, xi = X(fi); g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = 1; g.beginPath(); g.moveTo(xi, pt); g.lineTo(xi, h - pb); g.stroke();
+  let k = 0; for (let i = 0; i < se.fr.length; i++) if (Math.abs(se.fr[i] - fi) < Math.abs(se.fr[k] - fi)) k = i;
+  for (const [arr, c] of [[se.med, '#cfd2e8'], [se.eq, '#7fa8ff'], [se.cw, '#e2bd5f']]) if (arr) { g.fillStyle = c; g.beginPath(); g.arc(xi, Y(arr[k]), 3, 0, 7); g.fill(); }
+  g.fillStyle = '#8fa89a'; g.textAlign = 'left'; g.fillText(fmtShort(S.data.dates[S.a]), pl, h - 5); g.textAlign = 'right'; g.fillText(fmtShort(S.data.dates[S.b]), w - pr, h - 5);
+}
+const _rm = new THREE.Matrix4();
+function computeRefLevel() {
+  S.refLevel = null;
+  if (S.mode !== 'cum' || S.ref === 'off') return;
+  const g = S.gains; if (!g) return;
+  if (S.ref === 'healthy') S.refLevel = g.cw ? g.cw.ret : g.mean;
+  else if (S.hist && isFinite(S.hist.medRet)) S.refLevel = Math.pow(1 + S.hist.medRet, S.n > 1 ? S.frame / (S.n - 1) : 1) - 1;
+}
+function updateRings() {
+  if (!G) return;
+  const on = S.ref !== 'off' && S.mode === 'cum' && S.refLevel != null;
+  G.ring.visible = on; markDirty(); if (!on) return;
+  const cm = cmode();
+  for (let s = 0; s < G.Sn; s++) {
+    let h = -50;
+    if (S.valid[s]) {
+      if (cm) { const w = S.w0[s]; h = w > 0 ? COIN * Math.abs(w * 100 * S.refLevel) / S.kc : -50; }
+      else h = COIN * coinsFor(100 * (1 + S.mult * S.refLevel));
+    }
+    _rm.makeTranslation(G.offX[s], h + 0.03, G.offZ[s]); G.ring.setMatrixAt(s, _rm);
+  }
+  G.ring.instanceMatrix.needsUpdate = true;
+}
+// "typical market": the median of every same-length window in this data
+function computeHist() {
+  S.hist = null;
+  const d = S.data; if (S.ref !== 'typical' || !d.hasCap) return;
+  const T = d.T, px = d.px, L = S.n - 1, Sn = d.S;
+  if (L < 1 || T - 1 - L < 20) return;
+  const step = Math.max(1, Math.floor((T - 1 - L) / 120));
+  const rets = [], tops = [], beats = [], gaps = [], R = new Float64Array(Sn), C = new Float64Array(Sn);
+  for (let a = 0; a + L <= T - 1; a += step) {
+    const b = a + L; let tot = 0, n = 0;
+    for (let s = 0; s < Sn; s++) {
+      const p0 = px[s * T + a], p1 = px[s * T + b]; if (!(p0 > 0 && p1 > 0)) continue;
+      const c = capAt(s, a); if (!(c > 0)) continue;
+      R[n] = p1 / p0 - 1; C[n] = c; tot += c; n++;
+    }
+    if (n < 100) continue;
+    let ret = 0; const cj = new Float64Array(n);
+    for (let j = 0; j < n; j++) { C[j] /= tot; cj[j] = C[j] * R[j]; ret += cj[j]; }
+    const so = Float64Array.from(cj).sort(); let top = 0; for (let i = 0; i < 10; i++) top += so[n - 1 - i];
+    let beat = 0; for (let j = 0; j < n; j++) if (R[j] > ret) beat++;
+    const rs = Float64Array.from(R.subarray(0, n)).sort(), medR = n % 2 ? rs[(n - 1) / 2] : (rs[n / 2 - 1] + rs[n / 2]) / 2;
+    rets.push(ret); if (ret > 0) tops.push(top / ret); beats.push(beat / n); gaps.push(medR - ret);
+  }
+  if (rets.length < 8) return;
+  const med = arr => { const s = Float64Array.from(arr).sort(), k = s.length; return k % 2 ? s[(k - 1) / 2] : (s[k / 2 - 1] + s[k / 2]) / 2; };
+  S.hist = { n: rets.length, medRet: med(rets), medTop: tops.length ? med(tops) : NaN, medBeat: med(beats), medGap: med(gaps), tops: Float64Array.from(tops).sort() };
+}
+const pctRank = (sorted, v) => { let c = 0; for (const x of sorted) if (x <= v) c++; return sorted.length ? c / sorted.length : NaN; };
+function renderDist(g) {
+  const wrap = $('#gDistWrap'); wrap.hidden = !(S.ref !== 'off' && g.cw && S.mode === 'cum');
+  if (wrap.hidden) return;
+  const ty = S.ref === 'typical', hs = ty ? S.hist : null;
+  const f0 = x => isFinite(x) ? Math.round(x * 100) + '%' : '\u2014', sg = x => isFinite(x) ? pct(x, 0) : '\u2014';
+  const pts = x => isFinite(x) ? (x >= 0 ? '+' : '\u2212') + Math.abs(Math.round(x * 100)) + ' pts' : '\u2014';
+  const dash = '\u2014';
+  const rows = [
+    ['Index gain', sg(g.cw.ret), ty ? (hs ? sg(hs.medRet) : dash) : sg(g.cw.ret)],
+    ['Top 10 contributors\u2019 share of the gain', f0(g.cw.top10Imp), ty ? (hs ? f0(hs.medTop) : dash) : f0(g.cw.w0)],
+    ['Stocks beating the index', f0(g.cw.beat), ty ? (hs ? f0(hs.medBeat) : dash) : dash],
+    ['Median stock vs the index', pts(g.med - g.cw.ret), ty ? (hs ? pts(hs.medGap) : dash) : '0 pts'],
+  ];
+  $('#gDist').innerHTML = `<div></div><div class="hd">This window</div><div class="hd">${ty ? 'Typical' : 'Healthy'}</div>` + rows.map(r => `<div class="l">${r[0]}</div><div class="v">${r[1]}</div><div class="v p">${r[2]}</div>`).join('');
+  let note;
+  if (ty) note = hs ? `Typical is the median of ${hs.n} windows of the same length (${S.n - 1} trading days) in this data.` + (isFinite(g.cw.top10Imp) && hs.tops.length ? ` The top-10 share here is higher than in ${Math.round(100 * pctRank(hs.tops, g.cw.top10Imp))}% of them.` : '') : 'Not enough history to find comparable windows this long. Try a shorter period.';
+  else note = 'Healthy means every stock earns the index return, so each stock\u2019s share of the gain equals its weight. The right-hand figure for the top 10 is what the ten largest companies weighed at the start.';
+  $('#gDistNote').textContent = note;
+}
+function setMetric(m) { S.metric = m; computeScale(); setScale(); applyLayout(); syncViewControls(); setFrame(S.frame); }
+function setRef(r) { S.ref = r; computeHist(); syncViewControls(); setFrame(S.frame); }
+function setMode(m) {
+  S.mode = m; S.multUser = false; S.mult = m === 'daily' ? autoMult(S.frame) : 1;
+  computeScale(); setScale(); syncViewControls();
+  S.playing = false; setPlayIcon(); S.pos = m === 'cum' ? S.n - 1 : bestFrame(); setFrame(S.pos);
+}
+
+/* ---------- stats pane ---------- */
+function renderStats() {
+  const st = S.stats, pn = S.pinned && S.pinned.stats, k = $('#kpis');
+  $('#winLabel').textContent = `${S.label} · ${S.n} day${S.n === 1 ? '' : 's'} · ${S.list.length} stocks`;
+  if (!st) { k.innerHTML = ''; $('#insight').textContent = 'Pick a period of at least 5 trading days to see volatility and correlation.'; renderPinCap(); return; }
+  k.style.gridTemplateColumns = pn ? '1fr auto auto' : '1fr auto';
+  const row = (l, v, p) => `<div class="l">${l}</div><div class="v">${v}</div>${pn ? `<div class="v p">${p}</div>` : ''}`;
+  const f0 = x => isFinite(x) ? (x * 100).toFixed(0) + '%' : '\u2014', f2 = x => isFinite(x) ? x.toFixed(2) : '\u2014';
+  let h = pn ? `<div></div><div class="hd">This period</div><div class="hd">Pinned</div>` : '';
+  h += row('One stock swings', f0(st.single), pn ? f0(pn.single) : '');
+  h += row(`Basket of all ${st.N}`, f0(st.all), pn ? f0(pn.all) : '');
+  h += row('Average correlation', f2(st.corr), pn ? f2(pn.corr) : '');
+  if (S.subActive) h += `<div class="l">Your basket of ${S.subCount}</div><div class="v">${f0(subsetVol())}</div>${pn ? '<div></div>' : ''}`;
+  k.innerHTML = h;
+  const ratio = st.all / st.single;
+  $('#insight').textContent = `Spreading $100 across ${st.N} stocks cuts the swing from about ${f0(st.single)} to ${f0(st.all)} a year. It stops there because stocks move together (correlation ${f2(st.corr)}).` + (ratio > 0.75 ? ' In this period diversification barely helped.' : '');
+  renderPinCap();
+}
+function renderPinCap() { const p = S.pinned; $('#unpin').hidden = !p; $('#pinCap').textContent = p ? `Pinned: ${p.label}. Dashed blue line on the chart.` : 'Pin a period, switch the time frame, and compare.'; }
+function drawChart() {
+  const cv = $('#curve'); if (!cv.offsetParent) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth, h = cv.clientHeight; if (!w) return;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  g.font = '10px "JetBrains Mono",ui-monospace,monospace';
+  const cur = S.curve, pin = S.pinned && S.pinned.curve;
+  if (!cur) { g.fillStyle = '#8fa89a'; g.fillText(S.stats ? 'Computing\u2026' : 'Not enough days', 10, 20); return; }
+  const pl = 34, pr = 12, pt = 10, pb = 22;
+  const maxV = Math.max(...cur.vols, ...(pin ? pin.vols : [0])) * 1.1;
+  const maxN = Math.max(cur.N, pin ? pin.N : 0), lg = Math.log(Math.max(2, maxN));
+  const X = n => pl + (w - pl - pr) * Math.log(n) / lg, Y = v => pt + (h - pt - pb) * (1 - v / maxV);
+  const step = maxV > 0.8 ? 0.2 : maxV > 0.35 ? 0.1 : 0.05;
+  g.strokeStyle = 'rgba(224,200,140,.14)'; g.fillStyle = '#8fa89a'; g.lineWidth = 1; g.textAlign = 'right';
+  for (let v = 0; v <= maxV; v += step) { const y = Math.round(Y(v)) + .5; g.beginPath(); g.moveTo(pl, y); g.lineTo(w - pr, y); g.stroke(); g.fillText(Math.round(v * 100) + '%', pl - 5, y + 3); }
+  g.textAlign = 'center';
+  for (const n of [1, 10, 100, maxN]) { if (n > maxN) continue; g.fillText(n === maxN ? String(n) : String(n), X(n), h - 6); }
+  if (S.subActive) { g.strokeStyle = 'rgba(226,189,95,.5)'; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(X(S.subCount), pt); g.lineTo(X(S.subCount), h - pb); g.stroke(); g.setLineDash([]); }
+  const line = (c, color, dash) => {
+    g.strokeStyle = color; g.fillStyle = color; g.lineWidth = 2; g.setLineDash(dash || []); g.beginPath();
+    c.sizes.forEach((n, i) => { const x = X(n), y = Y(c.vols[i]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); g.setLineDash([]);
+    c.sizes.forEach((n, i) => { g.beginPath(); g.arc(X(n), Y(c.vols[i]), 2.4, 0, 7); g.fill(); });
+  };
+  if (pin) line(pin, '#7fa8ff', [5, 4]);
+  line(cur, '#e2bd5f');
+  g.fillStyle = '#e2bd5f'; g.textAlign = 'right';
+  const last = cur.vols[cur.vols.length - 1]; g.fillText('floor ' + Math.round(last * 100) + '%', w - pr, Y(last) - 7);
+  g.fillStyle = '#8fa89a'; g.textAlign = 'left'; g.fillText('stocks in basket', pl + 4, pt + 8);
+}
+
+/* ---------- loading data into the scene ---------- */
+function setData(d) {
+  S.data = d; S.subsetN = 0; applyCaps(d); applyBench(d); computeCapRank(d);
+  buildStacks(d.S);
+  const from = $('#from'), to = $('#to');
+  from.min = to.min = d.dates[0]; from.max = to.max = d.dates[d.T - 1];
+  buildChips();
+  $('#dataInfo').innerHTML = `<b>${esc(d.label)}</b><br>${d.S} stocks · ${d.T} trading days<br>${fmtShort(d.dates[0])} to ${fmtShort(d.dates[d.T - 1])}`;
+  $('#resetData').hidden = !!d.builtin || (d.demo && !EMBED);
+  $('#resetData').textContent = EMBED ? 'Use built-in data' : 'Back to demo data';
+  updateBenchInfo(); S.pinned = null; S.mode = 'cum'; S.mult = 1; S.multUser = false; S.layout = d.hasCap ? 'cap' : 'rank'; S.metric = 'price'; S.scale = 'linear'; S.ref = 'off'; syncViewControls(); updateCapInfo();
+  // snap stacks to their first targets instead of growing from zero
+  applyRange('3Y');
+  for (let s = 0; s < G.Sn; s++) { G.curH[s] = G.tgtH[s]; G.curT[s] = G.tgtT[s]; G.curD[s] = G.tgtD[s]; }
+  G.aH.needsUpdate = G.aTint.needsUpdate = G.aDim.needsUpdate = true; updateLoss(); positionLogos();
+  for (let i = 0; i < 3; i++) G.barC[i] = G.barT[i] == null ? 0 : G.barT[i];
+  applyRefMeshes(); markDirty();
+}
+async function loadFile(file) {
+  toast('Reading ' + file.name + '\u2026');
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    const text = await file.text();
+    const raw = (/\.csv$/i.test(file.name) || text.trimStart()[0] !== '{') ? parseCSV(text) : parseJSON(text);
+    const d = finalizeData(raw, { label: file.name, demo: false });
+    setData(d);
+    toast(`Loaded ${d.S} stocks, ${d.T} days`);
+    try { if (typeof indexedDB !== 'undefined') await idb.set('data', d); } catch (e) { /* saving is optional */ }
+  } catch (e) { toast(e.message || 'Could not read that file.', true); }
+}
+
+/* ---------- view controls ---------- */
+function syncViewControls() {
+  const d = S.data, hasCap = !!(d && d.hasCap), cum = S.mode === 'cum';
+  if (S.layout === 'cap' && !hasCap) S.layout = 'rank';
+  if (S.metric === 'contrib' && !hasCap) S.metric = 'price';
+  if (S.ref !== 'off' && !hasCap) S.ref = 'off';
+  $$('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === S.mode ? 'true' : 'false'));
+  $('#mult').value = S.mult; $('#multOut').textContent = S.mult + '\u00d7'; $('#multWrap').hidden = cmode(); $('#mult').max = cum ? 10 : 40; if (S.mult > +$('#mult').max) S.mult = +$('#mult').max;
+  $$('#layoutSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.layout === S.layout ? 'true' : 'false'); if (b.dataset.layout === 'cap') b.disabled = !hasCap; });
+  $$('#metricSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.metric === S.metric ? 'true' : 'false'); if (b.dataset.metric === 'contrib') b.disabled = !hasCap || !cum; });
+  $$('#refSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.ref === S.ref ? 'true' : 'false'); if (b.dataset.ref !== 'off') b.disabled = !hasCap || !cum; });
+  $$('#scaleSeg button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.scale === S.scale ? 'true' : 'false'); if (b.dataset.scale === 'log') b.disabled = !cum || S.metric === 'contrib'; });
+  $('#logoWrap').hidden = !S.hasLogos;
+  $('#refCap').textContent = !cum ? 'The stack and comparison options apply to the gains view.' : S.ref === 'healthy' ? 'Blue rings mark where each stack would be if every stock earned the index return.' : S.ref === 'typical' ? 'Blue rings mark where each stack would be in the median window of this length in your data.' : '';
+}
+function updateSubSlider() {
+  const N = S.list.length, el = $('#subN'); el.max = N; el.min = 1; el.value = S.subsetN && S.subsetN < N ? S.subsetN : N;
+  $('#subOut').textContent = S.subActive ? S.subCount + ' of ' + N : 'All ' + N;
+}
+$$('#modeSeg button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$$('#metricSeg button').forEach(b => b.onclick = () => setMetric(b.dataset.metric));
+$$('#refSeg button').forEach(b => b.onclick = () => setRef(b.dataset.ref));
+$$('#layoutSeg button').forEach(b => b.onclick = () => { S.layout = b.dataset.layout; syncViewControls(); applyLayout(); hideTip(); });
+$$('#rankSeg button').forEach(b => b.onclick = () => { S.rankBy = b.dataset.rank; renderGains(); });
+$('#gList').addEventListener('click', e => { const r = e.target.closest('.lrow'); if (r) showTip(+r.dataset.s); });
+$('#mult').oninput = e => { S.multUser = true; S.mult = +e.target.value; $('#multOut').textContent = S.mult + '\u00d7'; if (S.mode === 'cum') { computeScale(); setScale(); } setFrame(S.frame); };
+let subT = 0;
+$('#subN').oninput = e => {
+  const v = +e.target.value, N = S.list.length; S.subsetN = v >= N ? 0 : v; rebuildSubset();
+  $('#subOut').textContent = S.subActive ? S.subCount + ' of ' + N : 'All ' + N;
+  setFrame(S.frame); clearTimeout(subT); subT = setTimeout(renderStats, 60);
+};
+$('#reshuffle').onclick = () => { S.seed++; if (!S.subsetN) { S.subsetN = Math.max(1, Math.round(S.list.length / 5)); } rebuildSubset(); updateSubSlider(); setFrame(S.frame); renderStats(); };
+$('#plane').onchange = e => { if (G) { G.plane.visible = G.planeEdge.visible = e.target.checked && !cmode(); placeBreakEven(); markDirty(); } };
+$('#lossOn').onchange = () => updateLoss();
+$('#idxBar').onchange = $('#idxLine').onchange = () => { updateRefBars(); if (!cam.moved) { cam.tx = refOn() && camera.aspect >= 1 ? -2.4 : 0; fitCamera(); } };
+$$('#scaleSeg button').forEach(b => b.onclick = () => { S.scale = b.dataset.scale; computeScale(); setScale(); syncViewControls(); setFrame(S.frame); });
+$('#logoN').oninput = e => { S.logoN = +e.target.value; $('#logoOut').textContent = S.logoN; chooseLogos(); positionLogos(); };
+let spin = false; $('#spin').onchange = e => { spin = e.target.checked; markDirty(); };
+
+/* ---------- transport ---------- */
+const ICON_PLAY = 'M3 1.5v13l11-6.5z', ICON_PAUSE = 'M3 1.5h3.5v13H3zM9.5 1.5H13v13H9.5z';
+function setPlayIcon() { $('#playIcon').innerHTML = `<path d="${S.playing ? ICON_PAUSE : ICON_PLAY}"/>`; $('#play').setAttribute('aria-label', S.playing ? 'Pause' : 'Play'); }
+function togglePlay() { if (S.n < 2) return; if (!S.playing && S.pos >= S.n - 1) { S.pos = 0; setFrame(0); } S.playing = !S.playing; setPlayIcon(); markDirty(); }
+$('#play').onclick = togglePlay;
+$('#scrub').oninput = e => { S.pos = +e.target.value; setFrame(S.pos); };
+const SPEEDS = [1, 2, 5, 10];
+$('#speed').onclick = () => { S.speed = SPEEDS[(SPEEDS.indexOf(S.speed) + 1) % SPEEDS.length]; $('#speed').textContent = S.speed + '\u00d7'; };
+window.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== 'range') return;
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+  else if (e.key === 'ArrowRight') { S.pos = clamp(Math.round(S.pos) + 1, 0, S.n - 1); setFrame(S.pos); }
+  else if (e.key === 'ArrowLeft') { S.pos = clamp(Math.round(S.pos) - 1, 0, S.n - 1); setFrame(S.pos); }
+});
+
+/* ---------- sheet and tabs ---------- */
+const sheet = $('#sheet'), wide = window.matchMedia('(min-width:900px)');
+function openTab(name, toggle) {
+  const was = sheet.dataset.open === '1' && $(`.tabs [data-tab="${name}"]`).getAttribute('aria-selected') === 'true';
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name ? 'true' : 'false'));
+  $$('.pane').forEach(p => p.toggleAttribute('data-active', p.dataset.pane === name));
+  sheet.dataset.open = (toggle && was && !wide.matches) ? '0' : '1';
+  if (sheet.dataset.open === '0') $$('.tabs button').forEach(b => b.setAttribute('aria-selected', 'false'));
+  document.body.classList.toggle('open', sheet.dataset.open === '1' && !wide.matches);
+  setTimeout(() => { drawChart(); renderGains(); }, 280); drawChart(); renderGains();
+}
+$$('.tabs button').forEach(b => b.onclick = () => openTab(b.dataset.tab, true));
+if (wide.matches) openTab('gains');
+else $$('.pane')[0].setAttribute('data-active', '');
+$('#from').onchange = $('#to').onchange = () => {
+  const d = S.data; let a = lowerBound(d.dates, $('#from').value || d.dates[0]), b = upperBound(d.dates, $('#to').value || d.dates[d.T - 1]);
+  if (b < a) b = a; setWindow(a, b);
+};
+
+/* ---------- data tab and modal ---------- */
+$('#loadBtn').onclick = () => $('#file').click();
+$('#file').onchange = e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = ''; };
+$('#resetData').onclick = async () => { try { await idb.del('data'); await idb.del('shares'); await idb.del('capshist'); } catch (e) { /* ignore */ } SHARE_MAP = { ...BASE_SHARES }; CAP_HIST = BASE_CAP_HIST; setData(EMBED || makeDemo()); toast(EMBED ? 'Back to the built-in prices' : 'Back to simulated demo data'); };
+function refreshShares() { applyCaps(S.data); syncViewControls(); updateCapInfo(); applyLayout(); setWindow(S.a, S.b, { chip: S.chip, label: S.label }); }
+$('#capBtn').onclick = () => $('#capFile').click();
+$('#capFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (j && Array.isArray(j.dates) && j.caps && typeof j.caps === 'object') {
+      if (Object.keys(j.caps).length < 20) throw new Error('That market-cap history has too few stocks.');
+      CAP_HIST = { dates: j.dates, caps: j.caps };
+      try { await idb.set('capshist', CAP_HIST); } catch (_) { /* optional */ }
+      refreshShares(); toast(`Loaded market-cap history for ${S.data.capHist ? S.data.capHist.n : 0} of ${S.data.S} stocks`); return;
+    }
+    const m = {}; let c = 0;
+    for (const [k, v] of Object.entries(j)) if (+v > 0) { m[k.replace('.', '-')] = +v; c++; }
+    if (c < 20) throw new Error('Expected sp500_shares.json or sp500_caps_history.json from the download scripts.');
+    Object.assign(SHARE_MAP, m);
+    try { const prev = (await idb.get('shares')) || {}; await idb.set('shares', { ...prev, ...m }); } catch (_) { /* optional */ }
+    refreshShares(); toast(`Loaded share counts for ${c} stocks`);
+  } catch (err) { toast(err.message || 'Could not read that file.', true); }
+};
+$('#logoBtn').onclick = () => $('#logoFile').click();
+$('#logoFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text()), c = applyLogosFile(j);
+    if (c < 1) throw new Error('Expected sp500_logos.json from download_logos.py: {"AAPL": "data:image/png;base64,..."}');
+    try { const prev = (await idb.get('logos')) || {}; await idb.set('logos', { ...prev, ...j }); } catch (_) { /* optional */ }
+    syncViewControls(); chooseLogos(); positionLogos(); renderGains(); toast(`Loaded logos for ${c} stocks`);
+  } catch (err) { toast(err.message || 'Could not read that file.', true); }
+};
+$('#benchBtn').onclick = () => $('#benchFile').click();
+$$('#benchRow button').forEach(b => b.onclick = () => { S.benchKey = b.dataset.bk; applyBench(S.data); updateBenchInfo(); setFrame(S.frame); });
+$('#benchFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (!j || !Array.isArray(j.dates) || !(j.series || j.prices)) throw new Error('Expected sp500_benchmark.json from download_benchmark.py.');
+    BENCH_RAW = j; try { await idb.set('bench', j); } catch (_) { /* optional */ }
+    applyBench(S.data); if (!S.data.bench) throw new Error('Those dates don\u2019t line up with your price data.');
+    updateBenchInfo(); computeRefBars(); updateRefBars(); setWindow(S.a, S.b, { chip: S.chip, label: S.label }); toast(`Using actual ${S.data.benchName} prices for the S&P reference`);
+  } catch (err) { BENCH_RAW = BASE_BENCH; if (S.data) applyBench(S.data); toast(err.message || 'Could not read that file.', true); }
+};
+const modal = $('#modal');
+$('#pyCode').textContent = $('#pyscript').textContent.trim();
+$('#pyCode2').textContent = $('#pyscript2').textContent.trim();
+$('#pyCode3').textContent = $('#pyscript3').textContent.trim();
+$('#pyCode4').textContent = $('#pyscript4').textContent.trim();
+$('#pyCode5').textContent = $('#pyscript5').textContent.trim();
+$('#howBtn').onclick = () => modal.classList.add('on');
+$('#closeModal').onclick = () => modal.classList.remove('on');
+modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('on'); });
+$('#copyPy').onclick = async () => {
+  const txt = $('#pyCode').textContent;
+  try { await navigator.clipboard.writeText(txt); toast('Script copied'); }
+  catch (e) { const r = document.createRange(); r.selectNodeContents($('#pyCode')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); toast('Script copied'); } catch (_) { toast('Select the script and copy it manually', true); } }
+};
+async function copyEl(id) {
+  const el = $('#' + id), txt = el.textContent;
+  try { await navigator.clipboard.writeText(txt); toast('Script copied'); }
+  catch (e) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); toast('Script copied'); } catch (_) { toast('Select the script and copy it manually', true); } }
+}
+$('#copyPy').onclick = () => copyEl('pyCode'); $('#copyPy2').onclick = () => copyEl('pyCode2'); $('#copyPy3').onclick = () => copyEl('pyCode3'); $('#copyPy4').onclick = () => copyEl('pyCode4'); $('#copyPy5').onclick = () => copyEl('pyCode5');
+$('#pin').onclick = () => { if (!S.stats || !S.curve) return; S.pinned = { label: S.label, stats: { ...S.stats }, curve: { ...S.curve } }; renderStats(); drawChart(); toast('Pinned. Change the period to compare.'); };
+$('#unpin').onclick = () => { S.pinned = null; renderStats(); drawChart(); };
+// drag & drop a file anywhere
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) loadFile(f); });
+
+
+/* ---------- Alpha Vantage (works when this file is opened locally; hosted copies block outside requests) ---------- */
+const AV_UNIVERSE = [["MMM","3M","Industrials"],["AOS","A. O. Smith","Industrials"],["ABT","Abbott Laboratories","Health Care"],["ABBV","AbbVie","Health Care"],["ACN","Accenture","Information Technology"],["ADBE","Adobe Inc.","Information Technology"],["AMD","Advanced Micro Devices","Information Technology"],["AES","AES Corporation","Utilities"],["AFL","Aflac","Financials"],["A","Agilent Technologies","Health Care"],["APD","Air Products","Materials"],["ABNB","Airbnb","Consumer Discretionary"],["AKAM","Akamai Technologies","Information Technology"],["ALB","Albemarle Corporation","Materials"],["ARE","Alexandria Real Estate Equities","Real Estate"],["ALGN","Align Technology","Health Care"],["ALLE","Allegion","Industrials"],["LNT","Alliant Energy","Utilities"],["ALL","Allstate","Financials"],["GOOGL","Alphabet Inc. (Class A)","Communication Services"],["GOOG","Alphabet Inc. (Class C)","Communication Services"],["MO","Altria","Consumer Staples"],["AMZN","Amazon","Consumer Discretionary"],["AMCR","Amcor","Materials"],["AEE","Ameren","Utilities"],["AEP","American Electric Power","Utilities"],["AXP","American Express","Financials"],["AIG","American International Group","Financials"],["AMT","American Tower","Real Estate"],["AWK","American Water Works","Utilities"],["AMP","Ameriprise Financial","Financials"],["AME","Ametek","Industrials"],["AMGN","Amgen","Health Care"],["APH","Amphenol","Information Technology"],["ADI","Analog Devices","Information Technology"],["AON","Aon plc","Financials"],["APA","APA Corporation","Energy"],["APO","Apollo Global Management","Financials"],["AAPL","Apple Inc.","Information Technology"],["AMAT","Applied Materials","Information Technology"],["APP","AppLovin","Communication Services"],["APTV","Aptiv","Consumer Discretionary"],["ACGL","Arch Capital Group","Financials"],["ADM","Archer Daniels Midland","Consumer Staples"],["ARES","Ares Management","Financials"],["ANET","Arista Networks","Information Technology"],["AJG","Arthur J. Gallagher & Co.","Financials"],["AIZ","Assurant","Financials"],["T","AT&T","Communication Services"],["ATO","Atmos Energy","Utilities"],["ADSK","Autodesk","Information Technology"],["ADP","Automatic Data Processing","Industrials"],["AZO","AutoZone","Consumer Discretionary"],["AVY","Avery Dennison","Materials"],["AXON","Axon Enterprise","Industrials"],["BKR","Baker Hughes","Energy"],["BALL","Ball Corporation","Materials"],["BAC","Bank of America","Financials"],["BAX","Baxter International","Health Care"],["BDX","Becton Dickinson","Health Care"],["BBY","Best Buy","Consumer Discretionary"],["TECH","Bio-Techne","Health Care"],["BIIB","Biogen","Health Care"],["BLK","BlackRock","Financials"],["BX","Blackstone Inc.","Financials"],["XYZ","Block, Inc.","Financials"],["BE","Bloom Energy","Industrials"],["BNY","BNY Mellon","Financials"],["BA","Boeing","Industrials"],["BKNG","Booking Holdings","Consumer Discretionary"],["BSX","Boston Scientific","Health Care"],["BMY","Bristol Myers Squibb","Health Care"],["AVGO","Broadcom","Information Technology"],["BR","Broadridge Financial Solutions","Industrials"],["BRO","Brown & Brown","Financials"],["BG","Bunge Global","Consumer Staples"],["BXP","BXP, Inc.","Real Estate"],["CHRW","C.H. Robinson","Industrials"],["CDNS","Cadence Design Systems","Information Technology"],["CPT","Camden Property Trust","Real Estate"],["COF","Capital One","Financials"],["CAH","Cardinal Health","Health Care"],["CCL","Carnival Corporation","Consumer Discretionary"],["CARR","Carrier Global","Industrials"],["CVNA","Carvana","Consumer Discretionary"],["CASY","Casey's","Consumer Staples"],["CAT","Caterpillar Inc.","Industrials"],["CBOE","Cboe Global Markets","Financials"],["CBRE","CBRE Group","Real Estate"],["CDW","CDW Corporation","Information Technology"],["COR","Cencora","Health Care"],["CNC","Centene Corporation","Health Care"],["CNP","CenterPoint Energy","Utilities"],["CF","CF Industries","Materials"],["CRL","Charles River Laboratories","Health Care"],["SCHW","Charles Schwab Corporation","Financials"],["CHTR","Charter Communications","Communication Services"],["CVX","Chevron Corporation","Energy"],["CMG","Chipotle Mexican Grill","Consumer Discretionary"],["CB","Chubb Limited","Financials"],["CHD","Church & Dwight","Consumer Staples"],["CIEN","Ciena","Information Technology"],["CI","Cigna","Health Care"],["CINF","Cincinnati Financial","Financials"],["CTAS","Cintas","Industrials"],["CSCO","Cisco","Information Technology"],["C","Citigroup","Financials"],["CFG","Citizens Financial Group","Financials"],["CLX","Clorox","Consumer Staples"],["CME","CME Group","Financials"],["CMS","CMS Energy","Utilities"],["KO","Coca-Cola Company (The)","Consumer Staples"],["CTSH","Cognizant","Information Technology"],["COHR","Coherent Corp.","Information Technology"],["COIN","Coinbase","Financials"],["CL","Colgate-Palmolive","Consumer Staples"],["CMCSA","Comcast","Communication Services"],["FIX","Comfort Systems USA","Industrials"],["COP","ConocoPhillips","Energy"],["ED","Consolidated Edison","Utilities"],["STZ","Constellation Brands","Consumer Staples"],["CEG","Constellation Energy","Utilities"],["COO","Cooper Companies (The)","Health Care"],["CPRT","Copart","Industrials"],["GLW","Corning Inc.","Information Technology"],["CPAY","Corpay","Financials"],["CSGP","CoStar Group","Real Estate"],["COST","Costco","Consumer Staples"],["CRH","CRH plc","Materials"],["CRWD","CrowdStrike","Information Technology"],["CCI","Crown Castle","Real Estate"],["CSX","CSX Corporation","Industrials"],["CMI","Cummins","Industrials"],["CVS","CVS Health","Health Care"],["DHR","Danaher Corporation","Health Care"],["DRI","Darden Restaurants","Consumer Discretionary"],["DDOG","Datadog","Information Technology"],["DVA","DaVita","Health Care"],["DECK","Deckers Brands","Consumer Discretionary"],["DE","Deere & Company","Industrials"],["DELL","Dell Technologies","Information Technology"],["DAL","Delta Air Lines","Industrials"],["DVN","Devon Energy","Energy"],["DXCM","Dexcom","Health Care"],["FANG","Diamondback Energy","Energy"],["DLR","Digital Realty","Real Estate"],["DG","Dollar General","Consumer Staples"],["DLTR","Dollar Tree","Consumer Staples"],["D","Dominion Energy","Utilities"],["DPZ","Domino's","Consumer Discretionary"],["DASH","DoorDash","Consumer Discretionary"],["DOV","Dover Corporation","Industrials"],["DOW","Dow Inc.","Materials"],["DHI","D. R. Horton","Consumer Discretionary"],["DTE","DTE Energy","Utilities"],["DUK","Duke Energy","Utilities"],["DD","DuPont","Industrials"],["ETN","Eaton Corporation","Industrials"],["EBAY","eBay Inc.","Consumer Discretionary"],["ECHO","EchoStar","Communication Services"],["ECL","Ecolab","Materials"],["EIX","Edison International","Utilities"],["EW","Edwards Lifesciences","Health Care"],["ELV","Elevance Health","Health Care"],["EME","Emcor","Industrials"],["EMR","Emerson Electric","Industrials"],["ETR","Entergy","Utilities"],["EOG","EOG Resources","Energy"],["EQT","EQT Corporation","Energy"],["EFX","Equifax","Industrials"],["EQIX","Equinix","Real Estate"],["ERIE","Erie Indemnity","Financials"],["ESS","Essex Property Trust","Real Estate"],["EL","Estée Lauder Companies (The)","Consumer Staples"],["EG","Everest Group","Financials"],["EVRG","Evergy","Utilities"],["P","Everpure","Information Technology"],["ES","Eversource Energy","Utilities"],["EXC","Exelon","Utilities"],["EXE","Expand Energy","Energy"],["EXPE","Expedia Group","Consumer Discretionary"],["EXPD","Expeditors International","Industrials"],["EXR","Extra Space Storage","Real Estate"],["XOM","ExxonMobil","Energy"],["FFIV","F5, Inc.","Information Technology"],["FDS","FactSet","Financials"],["FICO","Fair Isaac","Information Technology"],["FAST","Fastenal","Industrials"],["FRT","Federal Realty Investment Trust","Real Estate"],["FDX","FedEx","Industrials"],["FDXF","FedEx Freight","Industrials"],["FERG","Ferguson Enterprises","Industrials"],["FIS","Fidelity National Information Services","Financials"],["FITB","Fifth Third Bancorp","Financials"],["FSLR","First Solar","Information Technology"],["FE","FirstEnergy","Utilities"],["FISV","Fiserv","Financials"],["FLEX","Flex Ltd.","Information Technology"],["F","Ford Motor Company","Consumer Discretionary"],["FTNT","Fortinet","Information Technology"],["FTV","Fortive","Industrials"],["FOXA","Fox Corporation (Class A)","Communication Services"],["FOX","Fox Corporation (Class B)","Communication Services"],["BEN","Franklin Resources","Financials"],["FCX","Freeport-McMoRan","Materials"],["GRMN","Garmin","Consumer Discretionary"],["IT","Gartner","Information Technology"],["GE","GE Aerospace","Industrials"],["GEHC","GE HealthCare","Health Care"],["GEV","GE Vernova","Industrials"],["GEN","Gen Digital","Information Technology"],["GNRC","Generac","Industrials"],["GD","General Dynamics","Industrials"],["GIS","General Mills","Consumer Staples"],["GM","General Motors","Consumer Discretionary"],["GPC","Genuine Parts Company","Consumer Discretionary"],["GILD","Gilead Sciences","Health Care"],["GPN","Global Payments","Financials"],["GL","Globe Life","Financials"],["GDDY","GoDaddy","Information Technology"],["GS","Goldman Sachs","Financials"],["HAL","Halliburton","Energy"],["HIG","Hartford (The)","Financials"],["HAS","Hasbro","Consumer Discretionary"],["HCA","HCA Healthcare","Health Care"],["DOC","Healthpeak Properties","Real Estate"],["HSIC","Henry Schein","Health Care"],["HSY","Hershey Company (The)","Consumer Staples"],["HPE","Hewlett Packard Enterprise","Information Technology"],["HLT","Hilton Worldwide","Consumer Discretionary"],["HD","Home Depot (The)","Consumer Discretionary"],["HONA","Honeywell Aerospace","Industrials"],["HON","Honeywell Technologies","Industrials"],["HRL","Hormel Foods","Consumer Staples"],["HST","Host Hotels & Resorts","Real Estate"],["HWM","Howmet Aerospace","Industrials"],["HPQ","HP Inc.","Information Technology"],["HUBB","Hubbell Incorporated","Industrials"],["HUM","Humana","Health Care"],["HBAN","Huntington Bancshares","Financials"],["HII","Huntington Ingalls Industries","Industrials"],["IBM","IBM","Information Technology"],["IEX","IDEX Corporation","Industrials"],["IDXX","Idexx Laboratories","Health Care"],["ITW","Illinois Tool Works","Industrials"],["ILMN","Illumina, Inc.","Health Care"],["INCY","Incyte","Health Care"],["IR","Ingersoll Rand","Industrials"],["PODD","Insulet Corporation","Health Care"],["INTC","Intel","Information Technology"],["IBKR","Interactive Brokers","Financials"],["ICE","Intercontinental Exchange","Financials"],["IFF","International Flavors & Fragrances","Materials"],["IP","International Paper","Materials"],["INTU","Intuit","Information Technology"],["ISRG","Intuitive Surgical","Health Care"],["IVZ","Invesco","Financials"],["INVH","Invitation Homes","Real Estate"],["IQV","IQVIA","Health Care"],["IRM","Iron Mountain","Real Estate"],["JBHT","J.B. Hunt","Industrials"],["JBL","Jabil","Information Technology"],["JKHY","Jack Henry & Associates","Financials"],["J","Jacobs Solutions","Industrials"],["JNJ","Johnson & Johnson","Health Care"],["JCI","Johnson Controls","Industrials"],["JPM","JPMorgan Chase","Financials"],["KVUE","Kenvue","Consumer Staples"],["KDP","Keurig Dr Pepper","Consumer Staples"],["KEY","KeyCorp","Financials"],["KEYS","Keysight Technologies","Information Technology"],["KMB","Kimberly-Clark","Consumer Staples"],["KIM","Kimco Realty","Real Estate"],["KMI","Kinder Morgan","Energy"],["KKR","KKR & Co.","Financials"],["KLAC","KLA Corporation","Information Technology"],["KHC","Kraft Heinz","Consumer Staples"],["KR","Kroger","Consumer Staples"],["LHX","L3Harris","Industrials"],["LH","Labcorp","Health Care"],["LRCX","Lam Research","Information Technology"],["LVS","Las Vegas Sands","Consumer Discretionary"],["LDOS","Leidos","Industrials"],["LEN","Lennar","Consumer Discretionary"],["LII","Lennox International","Industrials"],["LLY","Lilly (Eli)","Health Care"],["LIN","Linde plc","Materials"],["LYV","Live Nation Entertainment","Communication Services"],["LMT","Lockheed Martin","Industrials"],["L","Loews Corporation","Financials"],["LOW","Lowe's","Consumer Discretionary"],["LULU","Lululemon Athletica","Consumer Discretionary"],["LITE","Lumentum","Information Technology"],["LYB","LyondellBasell","Materials"],["MTB","M&T Bank","Financials"],["MPC","Marathon Petroleum","Energy"],["MAR","Marriott International","Consumer Discretionary"],["MRSH","Marsh McLennan","Financials"],["MLM","Martin Marietta Materials","Materials"],["MRVL","Marvell Technology","Information Technology"],["MAS","Masco","Industrials"],["MA","Mastercard","Financials"],["MKC","McCormick & Company","Consumer Staples"],["MCD","McDonald's","Consumer Discretionary"],["MCK","McKesson","Health Care"],["MDT","Medtronic","Health Care"],["MRK","Merck & Co.","Health Care"],["META","Meta Platforms","Communication Services"],["MET","MetLife","Financials"],["MTD","Mettler Toledo","Health Care"],["MGM","MGM Resorts","Consumer Discretionary"],["MCHP","Microchip Technology","Information Technology"],["MU","Micron Technology","Information Technology"],["MSFT","Microsoft","Information Technology"],["MAA","Mid-America Apartment Communities","Real Estate"],["MRNA","Moderna","Health Care"],["MDLZ","Mondelez International","Consumer Staples"],["MPWR","Monolithic Power Systems","Information Technology"],["MNST","Monster Beverage","Consumer Staples"],["MCO","Moody's Corporation","Financials"],["MS","Morgan Stanley","Financials"],["MOS","Mosaic Company (The)","Materials"],["MSI","Motorola Solutions","Information Technology"],["MSCI","MSCI","Financials"],["NDAQ","Nasdaq, Inc.","Financials"],["NTAP","NetApp","Information Technology"],["NFLX","Netflix","Communication Services"],["NEM","Newmont","Materials"],["NWSA","News Corp (Class A)","Communication Services"],["NWS","News Corp (Class B)","Communication Services"],["NEE","NextEra Energy","Utilities"],["NKE","Nike, Inc.","Consumer Discretionary"],["NI","NiSource","Utilities"],["NDSN","Nordson Corporation","Industrials"],["NSC","Norfolk Southern","Industrials"],["NTRS","Northern Trust","Financials"],["NOC","Northrop Grumman","Industrials"],["NCLH","Norwegian Cruise Line Holdings","Consumer Discretionary"],["NRG","NRG Energy","Utilities"],["NUE","Nucor","Materials"],["NVDA","Nvidia","Information Technology"],["NVR","NVR, Inc.","Consumer Discretionary"],["NXPI","NXP Semiconductors","Information Technology"],["ORLY","O'Reilly Automotive","Consumer Discretionary"],["OXY","Occidental Petroleum","Energy"],["ODFL","Old Dominion","Industrials"],["OMC","Omnicom Group","Communication Services"],["ON","ON Semiconductor","Information Technology"],["OKE","Oneok","Energy"],["ORCL","Oracle Corporation","Information Technology"],["OTIS","Otis Worldwide","Industrials"],["PCAR","Paccar","Industrials"],["PKG","Packaging Corporation of America","Materials"],["PLTR","Palantir Technologies","Information Technology"],["PANW","Palo Alto Networks","Information Technology"],["PH","Parker Hannifin","Industrials"],["PAYX","Paychex","Industrials"],["PYPL","PayPal","Financials"],["PNR","Pentair","Industrials"],["PEP","PepsiCo","Consumer Staples"],["PFE","Pfizer","Health Care"],["PCG","PG&E Corporation","Utilities"],["PM","Philip Morris International","Consumer Staples"],["PSX","Phillips 66","Energy"],["PNW","Pinnacle West Capital","Utilities"],["PNC","PNC Financial Services","Financials"],["PPG","PPG Industries","Materials"],["PPL","PPL Corporation","Utilities"],["PFG","Principal Financial Group","Financials"],["PG","Procter & Gamble","Consumer Staples"],["PGR","Progressive Corporation","Financials"],["PLD","Prologis","Real Estate"],["PRU","Prudential Financial","Financials"],["PEG","Public Service Enterprise Group","Utilities"],["PTC","PTC Inc.","Information Technology"],["PSA","Public Storage","Real Estate"],["PHM","PulteGroup","Consumer Discretionary"],["PWR","Quanta Services","Industrials"],["QCOM","Qualcomm","Information Technology"],["DGX","Quest Diagnostics","Health Care"],["Q","Qnity Electronics","Information Technology"],["RL","Ralph Lauren Corporation","Consumer Discretionary"],["RJF","Raymond James Financial","Financials"],["RDDT","Reddit","Communication Services"],["RTX","RTX Corporation","Industrials"],["O","Realty Income","Real Estate"],["REG","Regency Centers","Real Estate"],["REGN","Regeneron Pharmaceuticals","Health Care"],["RF","Regions Financial Corporation","Financials"],["RSG","Republic Services","Industrials"],["RMD","ResMed|","Health Care"],["RVTY","Revvity","Health Care"],["HOOD","Robinhood Markets","Financials"],["ROK","Rockwell Automation","Industrials"],["ROL","Rollins, Inc.","Industrials"],["ROP","Roper Technologies","Information Technology"],["ROST","Ross Stores","Consumer Discretionary"],["RCL","Royal Caribbean Group","Consumer Discretionary"],["SPGI","S&P Global","Financials"],["CRM","Salesforce","Information Technology"],["SNDK","Sandisk","Information Technology"],["SBAC","SBA Communications","Real Estate"],["SLB","Schlumberger","Energy"],["STX","Seagate Technology","Information Technology"],["SRE","Sempra","Utilities"],["NOW","ServiceNow","Information Technology"],["SHW","Sherwin-Williams","Materials"],["SPG","Simon Property Group","Real Estate"],["SKYD","Skydance Corporation","Communication Services"],["SWKS","Skyworks Solutions","Information Technology"],["SJM","J.M. Smucker Company (The)","Consumer Staples"],["SW","Smurfit Westrock","Materials"],["SNA","Snap-on","Industrials"],["SOLV","Solventum","Health Care"],["SO","Southern Company","Utilities"],["LUV","Southwest Airlines","Industrials"],["SWK","Stanley Black & Decker","Industrials"],["SBUX","Starbucks","Consumer Discretionary"],["STT","State Street Corporation","Financials"],["STLD","Steel Dynamics","Materials"],["STE","Steris","Health Care"],["SYK","Stryker Corporation","Health Care"],["SMCI","Supermicro","Information Technology"],["SYF","Synchrony Financial","Financials"],["SNPS","Synopsys","Information Technology"],["SYY","Sysco","Consumer Staples"],["TMUS","T-Mobile US","Communication Services"],["TROW","T. Rowe Price","Financials"],["TTWO","Take-Two Interactive","Communication Services"],["TPR","Tapestry, Inc.","Consumer Discretionary"],["TRGP","Targa Resources","Energy"],["TGT","Target Corporation","Consumer Staples"],["TEL","TE Connectivity","Information Technology"],["TDY","Teledyne Technologies","Information Technology"],["TER","Teradyne","Information Technology"],["TSLA","Tesla, Inc.","Consumer Discretionary"],["TXN","Texas Instruments","Information Technology"],["TPL","Texas Pacific Land Corporation","Energy"],["TXT","Textron","Industrials"],["TMO","Thermo Fisher Scientific","Health Care"],["TJX","TJX Companies","Consumer Discretionary"],["TKO","TKO Group Holdings","Communication Services"],["TSCO","Tractor Supply","Consumer Discretionary"],["TT","Trane Technologies","Industrials"],["TDG","TransDigm Group","Industrials"],["TRV","Travelers Companies (The)","Financials"],["TRMB","Trimble Inc.","Information Technology"],["TFC","Truist Financial","Financials"],["TWLO","Twilio","Information Technology"],["TYL","Tyler Technologies","Information Technology"],["TSN","Tyson Foods","Consumer Staples"],["USB","U.S. Bancorp","Financials"],["UBER","Uber","Industrials"],["UDR","UDR, Inc.","Real Estate"],["ULTA","Ulta Beauty","Consumer Discretionary"],["UNP","Union Pacific Corporation","Industrials"],["UAL","United Airlines Holdings","Industrials"],["UPS","United Parcel Service","Industrials"],["URI","United Rentals","Industrials"],["UNH","UnitedHealth Group","Health Care"],["UHS","Universal Health Services","Health Care"],["VLO","Valero Energy","Energy"],["VEEV","Veeva Systems","Health Care"],["VTR","Ventas","Real Estate"],["VLTO","Veralto","Industrials"],["VRSN","Verisign","Information Technology"],["VRSK","Verisk Analytics","Industrials"],["VZ","Verizon","Communication Services"],["VRTX","Vertex Pharmaceuticals","Health Care"],["VRT","Vertiv","Industrials"],["VTRS","Viatris","Health Care"],["VICI","Vici Properties","Real Estate"],["V","Visa Inc.","Financials"],["VST","Vistra Corp.","Utilities"],["VMRK","Vivmark Residential","Real Estate"],["VMC","Vulcan Materials Company","Materials"],["VYLR","Vylor","Consumer Staples"],["WRB","W. R. Berkley Corporation","Financials"],["GWW","W. W. Grainger","Industrials"],["WAB","Wabtec","Industrials"],["WMT","Walmart","Consumer Staples"],["DIS","Walt Disney Company (The)","Communication Services"],["WM","Waste Management","Industrials"],["WAT","Waters Corporation","Health Care"],["WEC","WEC Energy Group","Utilities"],["WFC","Wells Fargo","Financials"],["WELL","Welltower","Real Estate"],["WST","West Pharmaceutical Services","Health Care"],["WDC","Western Digital","Information Technology"],["WY","Weyerhaeuser","Real Estate"],["WSM","Williams-Sonoma, Inc.","Consumer Discretionary"],["WMB","Williams Companies","Energy"],["WTW","Willis Towers Watson","Financials"],["WDAY","Workday, Inc.","Information Technology"],["WYNN","Wynn Resorts","Consumer Discretionary"],["XEL","Xcel Energy","Utilities"],["XYL","Xylem Inc.","Industrials"],["YUM","Yum! Brands","Consumer Discretionary"],["ZBRA","Zebra Technologies","Information Technology"],["ZBH","Zimmer Biomet","Health Care"],["ZTS","Zoetis","Health Care"]];
+const AV_PLANS = {
+  free: { fn: 'TIME_SERIES_DAILY', size: 'compact', field: '4. close', count: 25, rate: 5,
+    note: 'Free keys allow 25 calls a day and return only the latest ~100 trading days, so you can\u2019t compare older periods. Each run fetches the next stocks it hasn\u2019t saved yet; run again tomorrow to add more.' },
+  premium: { fn: 'TIME_SERIES_DAILY_ADJUSTED', size: 'full', field: '5. adjusted close', count: 500, rate: 75,
+    note: 'Premium keys return full split- and dividend-adjusted history. Set calls per minute to your plan\u2019s limit. 500 stocks at 75 a minute takes about 7 minutes.' },
+};
+const avMem = new Map();
+const avState = { plan: 'free', running: false, stop: false, wake: null };
+const AV_ORDER = (() => { const r = mulberry32(42), a = AV_UNIVERSE.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; })();
+const avStatus = (msg, err) => { const el = $('#avStatus'); el.textContent = msg; el.className = 'info' + (err ? ' err' : ''); };
+async function avLoadAll() {
+  if (avMem.size) return;
+  try { const list = (await idb.get('avlist')) || []; for (const s of list) { const r = await idb.get('av:' + s); if (r) avMem.set(s, r); } } catch (e) { /* storage optional */ }
+}
+async function avSave(sym, rec) { avMem.set(sym, rec); try { await idb.set('av:' + sym, rec); await idb.set('avlist', [...avMem.keys()]); } catch (e) { /* storage optional */ } }
+async function avClear() { for (const s of [...avMem.keys()]) { try { await idb.del('av:' + s); } catch (e) { /* ignore */ } } avMem.clear(); try { await idb.del('avlist'); } catch (e) { /* ignore */ } }
+function isSplitRatio(r) {
+  if (!(r > 0)) return false; const f = r < 1 ? 1 / r : r; if (f < 1.7) return false;
+  const k = Math.round(f); return [2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 25, 30, 40, 50].includes(k) && Math.abs(f - k) / k < 0.1;
+}
+function fixSplits(p) { // back-adjust unadjusted closes for probable splits; returns how many were found
+  let n = 0;
+  for (let t = p.length - 1; t >= 1; t--) { const r = p[t] / p[t - 1]; if (isSplitRatio(r)) { for (let j = 0; j < t; j++) p[j] *= r; n++; } }
+  return n;
+}
+async function avFetchOne(sym, key, cfg) {
+  const url = `https://www.alphavantage.co/query?function=${cfg.fn}&symbol=${encodeURIComponent(sym)}&outputsize=${cfg.size}&apikey=${encodeURIComponent(key)}`;
+  const res = await fetch(url, { cache: 'no-store' });
+  const j = await res.json(), ts = j['Time Series (Daily)'];
+  if (ts) {
+    const d = Object.keys(ts).sort(), p = new Float32Array(d.length);
+    for (let i = 0; i < d.length; i++) p[i] = parseFloat(ts[d[i]][cfg.field]);
+    return { status: 'ok', d, p };
+  }
+  const msg = j['Note'] || j['Information'] || j['Error Message'] || 'Unexpected response from Alpha Vantage.';
+  if (j['Error Message'] && !/api\s?key/i.test(j['Error Message'])) return { status: 'skip', msg };
+  return { status: 'stop', msg };
+}
+function avBuild() {
+  const all = [...avMem.entries()], fulls = all.filter(([, r]) => r.full);
+  const recs = fulls.length >= 20 ? fulls : all;   // full-history stocks take priority over short free-tier ones
+  if (recs.length < 20) return null;
+  const allFull = recs.every(([, r]) => r.full);
+  const firsts = recs.map(([, r]) => r.d[0]).sort(), lasts = recs.map(([, r]) => r.d[r.d.length - 1]).sort();
+  const end = lasts[Math.floor(lasts.length * 0.1)];
+  let start = allFull ? firsts[0] : firsts[firsts.length - 1];
+  if (start >= end) start = firsts[0];
+  const set = new Set(); for (const [, r] of recs) for (const x of r.d) if (x >= start && x <= end) set.add(x);
+  const dates = [...set].sort(), idx = new Map(dates.map((x, i) => [x, i]));
+  const cols = recs.map(([, r]) => { const f = new Float32Array(dates.length).fill(NaN); r.d.forEach((x, i) => { const k = idx.get(x); if (k !== undefined) f[k] = r.p[i]; }); return f; });
+  return finalizeData({ dates, tickers: recs.map(([s]) => s), names: recs.map(([, r]) => r.name), sectors: recs.map(([, r]) => r.sector), cols },
+    { label: `Alpha Vantage \u00b7 ${recs.length} stocks`, demo: false });
+}
+function avSync(resetValues) {
+  const cfg = AV_PLANS[avState.plan];
+  $$('#avPlan button').forEach(b => b.setAttribute('aria-pressed', b.dataset.plan === avState.plan ? 'true' : 'false'));
+  $('#avPlanNote').textContent = cfg.note;
+  if (resetValues) { $('#avCount').value = cfg.count; $('#avRate').value = cfg.rate; }
+  $('#avClear').hidden = avState.running || !avMem.size;
+}
+async function avRun() {
+  const key = $('#avKey').value.trim();
+  if (!key) return avStatus('Paste your Alpha Vantage key first.', true);
+  try { if ($('#avRemember').checked) localStorage.setItem('spx-av-key', key); else localStorage.removeItem('spx-av-key'); } catch (e) { /* ignore */ }
+  const cfg = AV_PLANS[avState.plan];
+  const want = clamp(parseInt($('#avCount').value, 10) || cfg.count, 1, AV_UNIVERSE.length);
+  const rate = Math.max(1, +$('#avRate').value || cfg.rate), gap = 60000 / rate + 250;
+  await avLoadAll();
+  const queue = AV_ORDER.filter(r => { const c = avMem.get(r[0]); return !c || (cfg.size === 'full' && !c.full); }).slice(0, want);
+  avState.running = true; avState.stop = false; $('#avGo').hidden = true; $('#avStop').hidden = false; $('#avClear').hidden = true;
+  let done = 0, skipped = 0, splits = 0, stopMsg = null;
+  for (const [sym, name, sector] of queue) {
+    if (avState.stop) break;
+    avStatus(`Fetching ${done + skipped + 1} of ${queue.length}: ${sym}`);
+    const t0 = performance.now(); let r;
+    try { r = await avFetchOne(sym, key, cfg); }
+    catch (e) { stopMsg = 'Couldn\u2019t reach Alpha Vantage. Open the downloaded .html file (hosted copies block outside requests) and check your connection.'; break; }
+    if (r.status === 'ok') { if (cfg.size === 'compact') splits += fixSplits(r.p); await avSave(sym, { name, sector, d: r.d, p: r.p, full: cfg.size === 'full' }); done++; }
+    else if (r.status === 'skip') skipped++;
+    else { stopMsg = r.msg; break; }
+    const wait = gap - (performance.now() - t0);
+    if (wait > 0 && !avState.stop) await new Promise(res => { const id = setTimeout(res, wait); avState.wake = () => { clearTimeout(id); res(); }; });
+  }
+  avState.running = false; $('#avGo').hidden = false; $('#avStop').hidden = true;
+  let msg = `Fetched ${done} new stock${done === 1 ? '' : 's'}` + (skipped ? ` (${skipped} had no data)` : '') + `. ${avMem.size} saved in total.` + (splits ? ` Adjusted ${splits} probable split${splits === 1 ? '' : 's'}.` : '');
+  if (stopMsg) msg += ' Stopped: ' + stopMsg;
+  let d = null; try { d = avBuild(); } catch (e) { msg += ' ' + e.message; }
+  if (d) { setData(d); try { if (typeof indexedDB !== 'undefined') await idb.set('data', d); } catch (e) { /* optional */ } msg += ' The 3D view now shows them.'; }
+  else if (avMem.size > 0 && avMem.size < 20) msg += ' Need at least 20 stocks to draw; run again to fetch more.';
+  avStatus(msg, !!stopMsg); avSync();
+}
+$$('#avPlan button').forEach(b => b.onclick = () => { if (avState.running) return; avState.plan = b.dataset.plan; avSync(true); });
+$('#avGo').onclick = avRun;
+$('#avStop').onclick = () => { avState.stop = true; if (avState.wake) avState.wake(); };
+$('#avClear').onclick = async () => { await avClear(); avStatus('Cleared the saved Alpha Vantage data.'); avSync(); };
+try { const k = localStorage.getItem('spx-av-key'); if (k) $('#avKey').value = k; } catch (e) { /* ignore */ }
+avLoadAll().then(() => avSync()); avSync(true);
+
+/* ---------- render loop ---------- */
+let last = performance.now();
+function tick(now) {
+  requestAnimationFrame(tick);
+  const raw = (now - last) / 1000, dt = Math.min(0.05, raw); last = now;
+  if (!G || !S.data) return;
+  if (S.playing) {
+    S.pos += Math.min(0.25, raw) * 3 * S.speed;
+    if (S.pos >= S.n - 1) { S.pos = S.n - 1; S.playing = false; setPlayIcon(); }
+    const f = Math.round(S.pos); if (f !== S.frame) setFrame(f);
+    markDirty();
+  }
+  const k = 1 - Math.exp(-dt * 9); let changed = false;
+  for (let s = 0; s < G.Sn; s++) {
+    let d = G.tgtH[s] - G.curH[s]; if (d !== 0) { G.curH[s] = Math.abs(d) > 1e-3 ? G.curH[s] + d * k : G.tgtH[s]; changed = true; }
+    d = G.tgtT[s] - G.curT[s]; if (d !== 0) { G.curT[s] = Math.abs(d) > 1e-3 ? G.curT[s] + d * k : G.tgtT[s]; changed = true; }
+    d = G.tgtD[s] - G.curD[s]; if (d !== 0) { G.curD[s] = Math.abs(d) > 1e-3 ? G.curD[s] + d * k : G.tgtD[s]; changed = true; }
+  }
+  if (changed) { G.aH.needsUpdate = G.aTint.needsUpdate = G.aDim.needsUpdate = true; updateLoss(); positionLogos(); placeDolly(); dirty = true; }
+  let barMoving = false;
+  for (let i = 0; i < 3; i++) { const tg = G.barT[i]; if (tg == null) continue; const dd = tg - G.barC[i]; if (Math.abs(dd) > 1e-3) { G.barC[i] += dd * k; barMoving = true; } else G.barC[i] = tg; }
+  if (barMoving) { applyRefMeshes(); dirty = true; }
+  if (spin && !ptrs.size) { cam.az += dt * 0.12; dirty = true; }
+  if (!dirty) return;
+  dirty = false;
+  updateCamera(); renderer.render(scene, camera); positionBreakEven(); positionRefTags();
+}
+
+/* ---------- boot ---------- */
+(async () => {
+  resize();
+  EMBED = await loadEmbedded();
+  loadEmbeddedShares(); await loadEmbeddedCaps();
+  try { const sv = await Promise.race([idb.get('shares'), new Promise(r => setTimeout(() => r(null), 900))]); if (sv && typeof sv === 'object') Object.assign(SHARE_MAP, sv); } catch (e) { /* optional */ }
+  loadEmbeddedLogos();
+  try { const lg = await Promise.race([idb.get('logos'), new Promise(r => setTimeout(() => r(null), 900))]); if (lg && typeof lg === 'object') applyLogosFile(lg); } catch (e) { /* optional */ }
+  updateLogoInfo();
+  loadEmbeddedBench();
+  try { const bn = await Promise.race([idb.get('bench'), new Promise(r => setTimeout(() => r(null), 900))]); if (bn && bn.dates && (!BENCH_RAW || String(bn.dates[bn.dates.length - 1]) > String(BENCH_RAW.dates[BENCH_RAW.dates.length - 1]))) BENCH_RAW = bn; } catch (e) { /* optional */ }
+  try { const ch = await Promise.race([idb.get('capshist'), new Promise(r => setTimeout(() => r(null), 900))]); if (ch && ch.caps && ch.dates) CAP_HIST = ch; } catch (e) { /* optional */ }
+  const saved = await loadSaved();
+  let d = null;
+  // the freshest data wins: a saved file only replaces the built-in prices if it ends on a later date
+  if (saved && saved.px && saved.dates) { saved.demo = false; if (!EMBED || saved.dates[saved.dates.length - 1] > EMBED.dates[EMBED.dates.length - 1]) d = saved; }
+  if (!d) d = EMBED;
+  setData(d || makeDemo());
+  if (d && d === saved) toast('Restored your saved price file');
+  requestAnimationFrame(tick);
+})();
+})();
+</script>
+</body>
+</html>

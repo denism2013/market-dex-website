@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');
+const html=fs.readFileSync('earnings/index.html','utf8');
+const ui=fs.readFileSync('earnings/earnings.js','utf8');
+const api=fs.readFileSync('functions/api/earnings.js','utf8');
+const index=fs.readFileSync('index.html','utf8');
+assert.match(html,/id="transcript"/);assert.match(html,/id="clear"/);assert.match(html,/id="downloadJson"/);
+assert.match(index,/href="earnings\//);
+assert.match(api,/export async function onRequest/);assert.match(api,/env\.AI/);
+assert.match(api,/no-store/);assert.match(api,/180000/);
+assert.doesNotMatch(ui+api,/localStorage|sessionStorage|indexedDB|console\.log|\.put\(|\.prepare\(/);
+assert.match(ui,/URL\.revokeObjectURL/);assert.match(ui,/pagehide/);
+assert.match(api,/Origin not allowed/);
+console.log('Earnings Lab structural, privacy and navigation tests passed');

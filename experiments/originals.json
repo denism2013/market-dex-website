@@ -1,0 +1,18 @@
+{
+  "atlas": {
+    "source_archive": "blockbuster_vault_seventeen_website_only.zip",
+    "source_path": "tools/the_weight_of_capital_portfolio_studio.html",
+    "hosted_path": "experiments/atlas.html",
+    "sha256": "384fd5f5a97c40a1dacc0284464cb8106907b7a173161c1f18a89fc63fe33e2c",
+    "integration": "Original complete app; escaped report-template closing body tag to prevent preview live-reload injection inside JavaScript. Runtime report output unchanged; sphere renderer unchanged.",
+    "hosted_sha256": "1dc4270d25957613a3344d912340001f4a779775badebbc96c836bfc092cdf4f",
+    "protected_sphere_sha256": "cf2beb538f9d87a9481e97c34eab72e6f60c8fa2473e5480b4e2c9cbb801929f"
+  },
+  "company": {
+    "source_archive": "blockbuster_vault_seventeen_website_only.zip",
+    "source_path": "tools/equity_intelligence_valuation_files.html",
+    "hosted_path": "experiments/company.html",
+    "sha256": "74a668ccb76573140704d27890d3fecfd35a71c66412d229225507dd45c128ab",
+    "integration": "byte-identical original; Colab collectors and local imports retained"
+  }
+}

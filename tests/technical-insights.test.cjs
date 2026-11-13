@@ -1,0 +1,14 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const studies=require('../technical-studies.js');
+const controls={studyAnchor:{value:'2026-01-01'},studyEmaFast:{checked:true},studyFib:{checked:true}};
+const context={window:{MDX_STUDIES:studies},document:{querySelector:s=>controls[s.slice(1)]||null}};
+vm.runInNewContext(fs.readFileSync('technical-insights.js','utf8'),context);
+const raw=Array.from({length:35},(_,i)=>({date:new Date(Date.UTC(2026,0,i+1)).toISOString().slice(0,10),open:100+i,high:101+i,low:99+i,close:100+i,volume:1000}));
+raw[10].close=null;
+const displayed=raw.filter(b=>Number.isFinite(b.close));const result=context.window.MDX_INSIGHTS.prepare(displayed,displayed,0,raw);
+const firstAfterGap=displayed.findIndex(b=>b.date===raw[11].date);
+assert.equal(result.lines[0].values[firstAfterGap],null,'omitted invalid close must still reset the study warm-up');
+assert.equal(result.levels.length,0,'range levels must not ignore an invalid source row');
+assert.equal(result.lines[0].values.at(-1),studies.compute(raw).ema9.at(-1));
+assert.ok(result.notes.some(x=>x.includes('unavailable')));
+console.log('Study integration: missing dated closes remain in warm-ups and invalidate Fibonacci range coverage.');

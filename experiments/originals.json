@@ -13,6 +13,7 @@
     "source_path": "tools/equity_intelligence_valuation_files.html",
     "hosted_path": "experiments/company.html",
     "sha256": "74a668ccb76573140704d27890d3fecfd35a71c66412d229225507dd45c128ab",
-    "integration": "byte-identical original; Colab collectors and local imports retained"
+    "integration": "Original analysis code unchanged; added navigation link to the session-only Earnings Intelligence Lab.",
+    "hosted_sha256": "bc73a49ca944a476452ea71c29cf7d1988942bdacdaa018dd42888ba80e982cc"
   }
 }

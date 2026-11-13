@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+(async()=>{
+ const {prepareTranscript,bytes,splitBytes,noteBatches,reportLines}=await import('../earnings-core.mjs');
+ const {onRequest,calculate,cleanReport,cleanNotes,LIMIT}=await import('../functions/api/earnings.js');
+ const {pathToFileURL}=require('node:url');
+ const parts=prepareTranscript(('CEO: Revenue was $100 million in FY2026 Q1. Guidance is $110 to $120 million.\nAnalyst: What changed in margins? CFO: We have not disclosed a range.\n').repeat(250));
+ assert(parts.chunks.length>1);assert(parts.chunks.every(p=>bytes(p)<=11000));assert.equal([...parts.sources.values()].join(''),('CEO: Revenue was $100 million in FY2026 Q1. Guidance is $110 to $120 million.\nAnalyst: What changed in margins? CFO: We have not disclosed a range.\n').repeat(250).trim().split('\n').join(''));
+ assert(splitBytes('😀'.repeat(10000),11000).every(s=>bytes(s)<=11000));assert.throws(()=>prepareTranscript('x'.repeat(250001)));assert.throws(()=>prepareTranscript('tiny'));
+ assert.equal(calculate({operation:'midpoint',a:110,b:120}).result,115);assert.equal(calculate({operation:'growth_pct',a:120,b:100}).result,20);assert.equal(calculate({operation:'growth_pct',a:100,b:0}),null);assert.equal(calculate({operation:'bps',a:20.5,b:19.2}).result,130);assert.equal(calculate({operation:'remaining',a:500,b:350}).result,150);
+ const base={verdict:{summary:'Revenue grew; cash details missing.',confidence:'Moderate'},findings:[{title:'Revenue',detail:'100m',layer:'Reported fact',sources:['P1','P999']}],sections:[],gaps:['No consensus.'],calculations:[{operation:'midpoint',a:110,b:120,sources:['P1']}]};const cleaned=cleanReport(base,new Set(['P1']));assert.deepEqual(cleaned.findings[0].sources,['P1']);assert.equal(cleaned.calculations[0].result,115);assert.equal(cleanNotes({notes:[{finding:'fake',sources:['P999']}]},new Set(['P1'])).notes.length,0);
+ let calls=0;const env={AI:{run:async(model,input)=>{calls++;assert.match(input.messages[0].content,/UNTRUSTED DATA/);assert.equal(input.temperature,.15);return {response:JSON.stringify(base)};}}};
+ const request=(body,origin='https://market-dex.com')=>new Request('https://market-dex.com/api/earnings',{method:'POST',headers:{origin,'content-type':'application/json'},body:JSON.stringify(body)});
+ let r=await onRequest({request:new Request('https://market-dex.com/api/earnings'),env});assert.equal((await r.json()).available,true);assert.match(r.headers.get('cache-control'),/no-store/);
+ r=await onRequest({request:request({stage:'analyze',input:'[P1] Revenue was 100 million and guidance 110 to 120 million.'}),env});assert.equal(r.status,200);assert.equal((await r.json()).result.calculations[0].result,115);assert.equal(calls,1);
+ r=await onRequest({request:request({stage:'analyze',input:'SECRET TRANSCRIPT'},'https://other.example'),env});assert.equal(r.status,403);assert.equal(calls,1);
+ r=await onRequest({request:request({stage:'extract',input:'P1 '+ 'x'.repeat(LIMIT)}),env});assert.equal(r.status,413);assert.equal(calls,1);
+ r=await onRequest({request:request({stage:'extract',input:'P1 SECRET PRIVATE TEXT '.repeat(8)}),env:{AI:{run(){throw Error('SECRET PRIVATE TEXT')}}}});assert.equal(r.status,502);assert(!(await r.text()).includes('SECRET PRIVATE'));
+ r=await onRequest({request:request({stage:'extract',input:'P1 SECRET PRIVATE TEXT '.repeat(8)}),env:{}});assert.equal(r.status,503);
+ const source=fs.readFileSync('earnings.mjs','utf8')+fs.readFileSync('functions/api/earnings.js','utf8');assert(!/localStorage|indexedDB|sessionStorage|console\.(log|error|warn)|caches\.put|\.innerHTML/.test(source));assert.match(source,/pagehide/);assert.match(source,/controller\?\.abort/);assert.match(source,/no-store/);assert.match(fs.readFileSync('_routes.json','utf8'),/\/api\/earnings/);
+ console.log('Earnings passed: complete chunk coverage, UTF-8 budgets, math, source validation, origin checks, no-store, generic errors, unavailable binding and no persistent/content-log APIs.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

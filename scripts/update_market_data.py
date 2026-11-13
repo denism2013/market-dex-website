@@ -14,6 +14,8 @@ import csv
 import io
 import json
 import math
+import re
+from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
 import time
@@ -108,6 +110,68 @@ def get_treasury(previous: dict, now: datetime) -> tuple[dict, list[str], bool]:
     }, warnings, fresh_source
 
 
+# H.15 constant-maturity yields distributed by FRED. Keep this archive separate
+# from Treasury's daily feed so each displayed row retains its exact publisher.
+FRED_SERIES = {"1M":"DGS1MO", "3M":"DGS3MO", "6M":"DGS6MO", "1Y":"DGS1",
+               "2Y":"DGS2", "3Y":"DGS3", "5Y":"DGS5", "7Y":"DGS7",
+               "10Y":"DGS10", "20Y":"DGS20", "30Y":"DGS30"}
+
+def parse_fred(content, series, today):
+    """Accept CSV exports or FRED's dated table-data export. Never parse prices from prose."""
+    pairs = []
+    if "observation_date" in content[:200] or "DATE," in content[:200]:
+        for row in csv.DictReader(io.StringIO(content.lstrip("\ufeff"))):
+            pairs.append((row.get("observation_date", row.get("DATE", "")), row.get(series)))
+    else:
+        pairs = re.findall(r"^\s*#?(\d{4}-\d{2}-\d{2})\s*\|\s*([0-9.]+|\.)\s*$", content, re.M)
+    result = {}
+    for day, raw in pairs:
+        value = finite(raw)
+        try: parsed = date.fromisoformat(day)
+        except (TypeError, ValueError): continue
+        if date(1990, 1, 1) <= parsed <= today and value is not None and 0 <= value < 30:
+            result[day] = value
+    if not result: raise ValueError(f"No validated observations for {series}")
+    return result
+
+def update_fred_archive(now):
+    import requests
+    path = DATA / 'treasury-history.json'
+    old = json.loads(path.read_text()) if path.exists() else {}
+    warnings = []
+    def fetch(item):
+        tenor, series = item
+        # The public table export requires no API key and includes the full history.
+        url = f'https://fred.stlouisfed.org/data/{series}.txt'
+        r = requests.get(url, timeout=40)
+        r.raise_for_status()
+        return tenor, series, parse_fred(r.text, series, now.date())
+    rows = {r['date']: dict(r['yields']) for r in old.get('history', [])}
+    success = []
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = [(item, pool.submit(fetch, item)) for item in FRED_SERIES.items()]
+        for (tenor, series), future in futures:
+            try:
+                _, _, observations = future.result()
+                success.append(series)
+                for day, value in observations.items(): rows.setdefault(day, {})[tenor] = value
+            except Exception as exc: warnings.append(f'{series}: {type(exc).__name__}: {str(exc)[:100]}')
+    history = [{'date':day, 'yields':values} for day, values in sorted(rows.items())
+               if all(t in values for t in ('2Y','10Y')) and len(values) >= 5]
+    if not history:
+        print('FRED unavailable: ' + '; '.join(warnings))
+        return
+    archive = {'schema':'market-dex.treasury-history.v1', 'provider':'Federal Reserve H.15 via FRED',
+        'source_url':'https://fred.stlouisfed.org/series/DGS10', 'series':FRED_SERIES,
+        'basis':'daily_constant_maturity_yields_pct', 'history':history,
+        'as_of':history[-1]['date'], 'collected_at':now.isoformat(),
+        'status':'observed' if len(success)==len(FRED_SERIES) else 'partial_cached',
+        'downloaded_series':success, 'warnings':warnings}
+    if not success and old: return  # Do not advance collection time on a total outage.
+    path.write_text(json.dumps(archive, separators=(',',':'), allow_nan=False)+'\n')
+    print(f"FRED: {len(history)} dated curves, {history[0]['date']} to {history[-1]['date']}; {len(success)}/11 series refreshed")
+
+
 def valid_bars(frame) -> list[dict]:
     """Use Yahoo's unadjusted daily Close. Reject nan/negative/future bars."""
     now_ny = datetime.now(ZoneInfo("America/New_York")).date()
@@ -117,7 +181,7 @@ def valid_bars(frame) -> list[dict]:
     for t, row in frame.iterrows():
         try:
             d = t.date() if hasattr(t, "date") else date.fromisoformat(str(t)[:10])
-            if d > now_ny or d < now_ny-timedelta(days=400):
+            if d > now_ny or d < now_ny-timedelta(days=1200):
                 continue
             close=finite(row.get("Close")); volume=finite(row.get("Volume")); op=finite(row.get("Open")); hi=finite(row.get("High")); lo=finite(row.get("Low"))
             if close is None or close <= 0 or close > 1_000_000_000:
@@ -126,11 +190,11 @@ def valid_bars(frame) -> list[dict]:
                 continue
             if None not in (op,hi,lo) and not (0 < lo <= max(op,hi,close)*1.05):
                 continue
-            out.append({"date": d.isoformat(), "close":round(close,6), "volume":int(volume) if volume is not None else None})
+            out.append({"date": d.isoformat(), "close":round(close,6), "volume":int(volume) if volume is not None else None, "open":op, "high":hi, "low":lo})
         except Exception:
             continue
     out.sort(key=lambda x:x['date'])
-    return list({p['date']:p for p in out}.values())[-130:]
+    return list({p['date']:p for p in out}.values())[-756:]
 
 
 def calc_indicators(bars: list[dict]) -> dict:
@@ -157,7 +221,7 @@ def get_markets(universe:list[dict],previous:dict, now:datetime):
     for batch in batches:
         try:
             # Ticker group_by is explicit. No adjusted price confusion: unadjusted Close.
-            df=yf.download(batch,period="8mo",interval="1d",group_by="ticker",auto_adjust=False,actions=False,threads=False,progress=False,timeout=22)
+            df=yf.download(batch,period="3y",interval="1d",group_by="ticker",auto_adjust=False,actions=False,threads=False,progress=False,timeout=22)
             if df is None or df.empty:raise ValueError('empty Yahoo daily history')
             for symbol in batch:
                 meta=next(x for x in universe if x['symbol']==symbol)
@@ -173,7 +237,7 @@ def get_markets(universe:list[dict],previous:dict, now:datetime):
                     if change_pct is not None and abs(change_pct)>55:
                         warnings.append(f'{symbol}: unusually large raw close-to-close change, potential corporate action')
                         change_pct=None
-                    result[symbol]={"symbol":symbol,"name":meta['name'],"group":meta['group'],"sector":meta.get('sector'),"asset_class":meta.get('asset_class'),"currency":"USD","provider":"Yahoo Finance via yfinance","source_url":f"https://finance.yahoo.com/quote/{symbol}/history/","price_basis":"unadjusted_daily_close","collected_at":now.isoformat().replace('+00:00','Z'),"as_of":recent['date'],"close":recent['close'],"prev_close":prev['close'],"change":change,"change_pct":change_pct,"volume":recent['volume'],"history":bars[-95:],"indicators":calc_indicators(bars),"status":"observed"}
+                    result[symbol]={"symbol":symbol,"name":meta['name'],"group":meta['group'],"sector":meta.get('sector'),"asset_class":meta.get('asset_class'),"currency":"USD","provider":"Yahoo Finance via yfinance","source_url":f"https://finance.yahoo.com/quote/{symbol}/history/","price_basis":"unadjusted_daily_close","collected_at":now.isoformat().replace('+00:00','Z'),"as_of":recent['date'],"close":recent['close'],"prev_close":prev['close'],"change":change,"change_pct":change_pct,"volume":recent['volume'],"history":bars,"indicators":calc_indicators(bars),"status":"observed"}
                     seen+=1
                 except Exception as exc:
                     warnings.append(f'{symbol}: {str(exc)[:95]}')
@@ -201,6 +265,7 @@ def commit_snapshot(snapshot:dict):
 
 def main():
     now=datetime.now(timezone.utc); now_ny=now.astimezone(ZoneInfo('America/New_York'))
+    update_fred_archive(now_ny)
     universe=json.loads((DATA/'universe.json').read_text())['instruments']
     old={}
     if (DATA/'latest.json').exists():

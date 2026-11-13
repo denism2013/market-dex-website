@@ -8,3 +8,11 @@
 .watchcard .diff.pos{color:#30e5a3!important;-webkit-text-fill-color:#30e5a3}
 .watchcard .diff.neg{color:#ff91b2!important;-webkit-text-fill-color:#ff91b2}
 .watchcard:hover,.watchcard:focus-visible{border-color:#ce49fc;box-shadow:0 0 0 1px #ce49fc44,0 10px 32px #ce49fc13}
+/* History and technical analysis use the existing terminal palette. */
+.hero-logo img{height:auto;object-fit:contain}
+.chart-controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:16px 0;color:#b5c8df;font-size:11px}
+.chart-controls label{display:flex;gap:7px;align-items:center}.chart-controls select,.chart-controls input{max-width:100%;background:#101b2b;border:1px solid #40516b;color:#edf5ff;color-scheme:dark;border-radius:6px;padding:8px;font-size:12px}
+.curve-controls{padding:12px;border:1px solid #263348;border-radius:10px}.curve-controls #curveHistoryStatus{flex-basis:100%;color:#b5c8df}.key{display:inline-block;width:13px;border-top:2px dashed;margin:0 3px}.sma20{color:#e3b4ff}.sma50{color:#ffcc66}.sma200{color:#58baff}.volume-canvas{width:100%;height:96px;display:block}.technical-summary{color:#dbe8fa;line-height:1.8;font-size:12px;border-left:2px solid #ce49fc;padding:10px 14px;margin:15px 0;background:#18162b}.indicator-methods{font-size:11px;color:#b5c8df;margin-bottom:16px}.indicator-methods summary{cursor:pointer;color:#b9e8f2}.metric-row{grid-template-columns:repeat(3,minmax(0,1fr))}.metric-row b{font-size:16px}.curve-controls input{min-width:135px}
+@media(max-width:580px){.chart-controls{gap:8px}.chart-controls label{flex-wrap:wrap}.curve-controls label{flex:1 1 130px}.curve-controls select,.curve-controls input{width:100%}.metric-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.data-notice{display:flex;flex-direction:column;gap:5px;padding:14px 18px;margin-top:18px;border:1px solid #4d426d;border-left:3px solid #ce49fc;border-radius:8px;background:#151326;color:#bfcfe3;font-size:12px}.data-notice strong{color:#e3b4ff;font-size:11px;letter-spacing:.08em}

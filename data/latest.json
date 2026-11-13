@@ -1,6 +1,6 @@
 {
   "schema": "market-dex.snapshot.v1",
-  "generated_at": "2026-11-13T05:48:40.985852Z",
+  "generated_at": "2026-11-13T06:55:46.726460Z",
   "refresh_window": "17:00 America/New_York business days",
   "frequency": "daily_eod",
   "status": "partial",
@@ -508,7 +508,7 @@
         "rsi14": 48.77,
         "realized_vol_20d": 22.59
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "QQQ": {
       "symbol": "QQQ",
@@ -1011,7 +1011,7 @@
         "rsi14": 45.39,
         "realized_vol_20d": 36.7
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "IWM": {
       "symbol": "IWM",
@@ -1514,7 +1514,7 @@
         "rsi14": 52.6,
         "realized_vol_20d": 25.92
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "DIA": {
       "symbol": "DIA",
@@ -2017,7 +2017,7 @@
         "rsi14": 50.79,
         "realized_vol_20d": 20.79
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "VTI": {
       "symbol": "VTI",
@@ -2520,7 +2520,7 @@
         "rsi14": 49.66,
         "realized_vol_20d": 22.46
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "VEA": {
       "symbol": "VEA",
@@ -3023,7 +3023,7 @@
         "rsi14": 51.76,
         "realized_vol_20d": 21.47
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "VWO": {
       "symbol": "VWO",
@@ -3526,7 +3526,7 @@
         "rsi14": 47.93,
         "realized_vol_20d": 23.43
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "EEM": {
       "symbol": "EEM",
@@ -4029,7 +4029,7 @@
         "rsi14": 46.97,
         "realized_vol_20d": 33.0
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "AGG": {
       "symbol": "AGG",
@@ -4532,7 +4532,7 @@
         "rsi14": 38.99,
         "realized_vol_20d": 5.61
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "TLT": {
       "symbol": "TLT",
@@ -5035,7 +5035,7 @@
         "rsi14": 36.03,
         "realized_vol_20d": 12.39
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "IEF": {
       "symbol": "IEF",
@@ -5538,7 +5538,7 @@
         "rsi14": 40.5,
         "realized_vol_20d": 7.28
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "SHY": {
       "symbol": "SHY",
@@ -6041,7 +6041,7 @@
         "rsi14": 37.14,
         "realized_vol_20d": 2.42
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "GLD": {
       "symbol": "GLD",
@@ -6544,7 +6544,7 @@
         "rsi14": 43.0,
         "realized_vol_20d": 28.01
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "USO": {
       "symbol": "USO",
@@ -7047,7 +7047,7 @@
         "rsi14": 27.09,
         "realized_vol_20d": 50.42
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "UUP": {
       "symbol": "UUP",
@@ -7550,7 +7550,7 @@
         "rsi14": 67.42,
         "realized_vol_20d": 5.63
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLB": {
       "symbol": "XLB",
@@ -8053,7 +8053,7 @@
         "rsi14": 55.97,
         "realized_vol_20d": 20.48
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLC": {
       "symbol": "XLC",
@@ -8556,7 +8556,7 @@
         "rsi14": 56.18,
         "realized_vol_20d": 22.58
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLE": {
       "symbol": "XLE",
@@ -9059,7 +9059,7 @@
         "rsi14": 32.95,
         "realized_vol_20d": 32.11
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLF": {
       "symbol": "XLF",
@@ -9562,7 +9562,7 @@
         "rsi14": 62.68,
         "realized_vol_20d": 21.53
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLI": {
       "symbol": "XLI",
@@ -10065,7 +10065,7 @@
         "rsi14": 57.68,
         "realized_vol_20d": 25.25
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLK": {
       "symbol": "XLK",
@@ -10568,7 +10568,7 @@
         "rsi14": 41.77,
         "realized_vol_20d": 46.34
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLP": {
       "symbol": "XLP",
@@ -11071,7 +11071,7 @@
         "rsi14": 60.07,
         "realized_vol_20d": 23.61
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLRE": {
       "symbol": "XLRE",
@@ -11574,7 +11574,7 @@
         "rsi14": 65.04,
         "realized_vol_20d": 19.63
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLU": {
       "symbol": "XLU",
@@ -12077,7 +12077,7 @@
         "rsi14": 67.41,
         "realized_vol_20d": 15.8
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLV": {
       "symbol": "XLV",
@@ -12580,7 +12580,7 @@
         "rsi14": 69.08,
         "realized_vol_20d": 20.95
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XLY": {
       "symbol": "XLY",
@@ -13083,7 +13083,7 @@
         "rsi14": 67.05,
         "realized_vol_20d": 27.34
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "AAPL": {
       "symbol": "AAPL",
@@ -13586,7 +13586,7 @@
         "rsi14": 54.74,
         "realized_vol_20d": 27.54
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "MSFT": {
       "symbol": "MSFT",
@@ -14089,7 +14089,7 @@
         "rsi14": 49.49,
         "realized_vol_20d": 37.1
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "NVDA": {
       "symbol": "NVDA",
@@ -14592,7 +14592,7 @@
         "rsi14": 24.49,
         "realized_vol_20d": 53.96
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "AMZN": {
       "symbol": "AMZN",
@@ -15095,7 +15095,7 @@
         "rsi14": 63.73,
         "realized_vol_20d": 42.43
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "GOOGL": {
       "symbol": "GOOGL",
@@ -15598,7 +15598,7 @@
         "rsi14": 38.23,
         "realized_vol_20d": 54.56
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "META": {
       "symbol": "META",
@@ -16101,7 +16101,7 @@
         "rsi14": 44.14,
         "realized_vol_20d": 40.99
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "TSLA": {
       "symbol": "TSLA",
@@ -16604,7 +16604,7 @@
         "rsi14": 57.85,
         "realized_vol_20d": 61.2
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "JPM": {
       "symbol": "JPM",
@@ -17107,7 +17107,7 @@
         "rsi14": 58.53,
         "realized_vol_20d": 27.55
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     },
     "XOM": {
       "symbol": "XOM",
@@ -17610,7 +17610,7 @@
         "rsi14": 34.21,
         "realized_vol_20d": 32.38
       },
-      "status": "observed"
+      "status": "prior_verified_cached"
     }
   },
   "treasury": {
@@ -18114,15 +18114,21 @@
         }
       }
     ],
-    "status": "prior_verified_cached"
+    "status": "observed"
   },
   "coverage": {
     "requested": 35,
     "loaded": 35,
-    "new_market_observations": 35,
-    "reused_previous": 0,
+    "new_market_observations": 0,
+    "reused_previous": 35,
     "treasury_loaded": true,
-    "treasury_fresh_source": false
+    "treasury_fresh_source": true
   },
-  "warnings": []
+  "warnings": [
+    "Batch SPY,QQQ,IWM,DIA,VTI,VEA,VWO,EEM,AGG: ValueError: empty Yahoo daily history",
+    "Batch TLT,IEF,SHY,GLD,USO,UUP,XLB,XLC,XLE: ValueError: empty Yahoo daily history",
+    "Batch XLF,XLI,XLK,XLP,XLRE,XLU,XLV,XLY,AAPL: ValueError: empty Yahoo daily history",
+    "Batch MSFT,NVDA,AMZN,GOOGL,META,TSLA,JPM,XOM: ValueError: empty Yahoo daily history",
+    "No newly observed Yahoo bars; previous verified data retained where available"
+  ]
 }

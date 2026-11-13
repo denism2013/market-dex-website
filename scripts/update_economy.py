@@ -7,6 +7,8 @@ import csv
 import io
 import json
 import math
+import re
+from html import unescape
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -24,7 +26,7 @@ SERIES = [
  ('ICSA','Initial jobless claims','Labor','DOL / Employment and Training Administration','Weekly','Claims','level','Seasonally adjusted; week ending Saturday'),
  ('JTSJOL','Job openings','Labor','BLS','Monthly','Thousands of openings','level','Seasonally adjusted'),
  ('GDPC1','Real GDP','Growth','BEA','Quarterly','Billions of chained 2017 dollars, annual rate','annualized','Seasonally adjusted annual rate'),
- ('RSAFS','Retail sales','Growth','Census Bureau','Monthly','Millions of dollars','mom','Seasonally adjusted; nominal'),
+ ('RSXFS','Retail trade sales','Growth','Census Bureau','Monthly','Millions of dollars','mom','Seasonally adjusted; nominal'),
  ('INDPRO','Industrial production','Growth','Federal Reserve Board','Monthly','Index 2017=100','mom','Seasonally adjusted'),
  ('HOUST','Housing starts','Housing','Census Bureau / HUD','Monthly','Thousands of units, annual rate','level','Seasonally adjusted annual rate'),
  ('DFF','Effective fed funds rate','Policy','Federal Reserve Board','Daily','Percent','level','Not seasonally adjusted'),
@@ -82,12 +84,25 @@ def update(previous=None, now=None, fetch=requests.get):
    response.raise_for_status();hist=parse_csv(response.text,sid,today)
    # A provider response older than our last verified observation is not a refresh.
    if old.get(sid,{}).get('history',[]) and hist[-1]['date']<old[sid]['history'][-1]['date']:raise ValueError('Response older than previous snapshot')
-   return build_series(spec,hist,stamp,old.get(sid)),None
+   row=build_series(spec,hist,stamp,old.get(sid))
+   row.update(checked_at=stamp,observation_date=hist[-1]['date'],release_date=None,release_date_note='CSV identifies observation periods, not release dates.',source_updated_at=None,next_release_date=None)
+   try:
+    page=fetch(f'https://fred.stlouisfed.org/series/{sid}',timeout=20)
+    page.raise_for_status()
+    plain=unescape(re.sub('<[^>]+>',' ',page.text));plain=re.sub(r'\s+',' ',plain)
+    for key,pattern in [('next_release_date',r'Next Release Date:\s*([A-Z][a-z]{2} \d{1,2}, \d{4})'),('source_updated_at',r'Updated:\s*([A-Z][a-z]{2} \d{1,2}, \d{4})')]:
+     match=re.search(pattern,plain)
+     if match:row[key]=datetime.strptime(match[1],'%b %d, %Y').date().isoformat()
+   except Exception:pass
+   age=(today-date.fromisoformat(hist[-1]['date'])).days
+   overdue=age>{'Daily':10,'Weekly':21,'Monthly':85,'Quarterly':180}[spec[4]]
+   row['freshness']='stale_reference_period' if overdue else 'awaiting_scheduled_release' if row['next_release_date'] and row['next_release_date']>today.isoformat() else 'latest_fetched_release_schedule_unknown'
+   return row,None
   except Exception as exc:
-   if old.get(sid,{}).get('history'):return build_series(spec,old[sid]['history'],old[sid]['collected_at'],old[sid],True),sid+': fetch unavailable; retained verified series ('+type(exc).__name__+')'
+   if old.get(sid,{}).get('history'):return {**old[sid],'status':'retained_previous','checked_at':stamp,'freshness':'source_unavailable'},sid+': fetch unavailable; retained verified series ('+type(exc).__name__+')'
    return {**build_series(spec,[],None),'status':'unavailable'},sid+': unavailable ('+type(exc).__name__+')'
  with ThreadPoolExecutor(max_workers=4) as pool:results=list(pool.map(one,SERIES))
- return {'schema':'market-dex.economy.v1','generated_at':stamp,'refresh_policy':'Checked with the weekday 5 PM New York market snapshot; releases follow agency schedules.','vintage_note':'Latest available, revisable data; this is not a point-in-time archive. Observation dates identify reference periods, not release dates. No consensus or surprise estimates.','series':[r[0] for r in results],'warnings':[r[1] for r in results if r[1]]}
+ return {'schema':'market-dex.economy.v1','generated_at':stamp,'refresh_policy':'Checked hourly during weekday release hours and after the close; next-release dates come from FRED when available.','vintage_note':'Latest available, revisable data; this is not a point-in-time archive. Observation dates identify reference periods, not release dates. No consensus or surprise estimates.','series':[r[0] for r in results],'warnings':[r[1] for r in results if r[1]]}
 
 def main():
  previous=json.loads(PATH.read_text()) if PATH.exists() else None

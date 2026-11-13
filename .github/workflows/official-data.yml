@@ -1,0 +1,30 @@
+name: Official economic releases
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 13-22 * * 1-5'
+permissions:
+  contents: write
+concurrency:
+  group: market-dex-daily-snapshot
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - run: python scripts/update_economy.py
+      - name: Publish validated observations
+        run: |
+          git config user.name 'market-dex-data-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/economy.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: refresh official economic and Treasury releases'
+            git push origin HEAD:main
+          fi

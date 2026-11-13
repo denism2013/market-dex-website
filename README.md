@@ -107,3 +107,5 @@ TXT, text-based PDF and DOCX are supported, 15 MB uploads / 100 PDF pages / 250 
 Only the requested ticker's already-public Market-DEX snapshot row is added server-side, with source and observation date. It is daily-close context, not pre-release consensus or a verified earnings-event reaction. No private input is appended to the market-data repository or scheduler.
 
 Validation: `node tests/earnings.test.cjs`, all existing CJS regression tests, all Python tests, `wrangler pages functions build`, DOCX/PDF browser extraction and Clear Session checks. Use fabricated transcripts for live smoke tests; never retain real transcripts in test logs, screenshots, Git or fixtures. `scripts/compose_startup.py` produces the new original stereo 'Circuit Bloom' three-second cue with softer lead, harmony, bass and percussion.
+
+The earnings endpoint validates evidence references and recomputes supported arithmetic before returning a session report. A successful source commit is not proof of publication: verify the Cloudflare check and the live `/api/earnings` readiness response separately.

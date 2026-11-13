@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="robots" content="noindex">
+<title>MARKET-DEX | Earnings Intelligence</title><link rel="icon" href="../assets/logo-mini.png">
+<link rel="stylesheet" href="../styles.css"><link rel="stylesheet" href="earnings.css"></head>
+<body><main class="earnings-shell">
+<header class="earnings-header"><a class="back" href="../index.html#research">← Company Lens</a><div class="brand">MARKET<span>·</span>DEX <small>/ EARNINGS INTELLIGENCE</small></div><span class="privacy">SESSION ONLY</span></header>
+<section class="intro"><span class="eyebrow">COMPANY RESEARCH / EARNINGS</span><h1>Separate the <em>signal</em> from the script.</h1><p>Upload or paste an earnings call transcript. Our analysis separates management's claims, quantitative evidence, unknowns, and investment implications. Nothing you enter is added to the site's files or saved by this page.</p></section>
+<div class="layout"><section class="glass editor"><h2>Transcript workspace</h2><p class="hint">Your transcript remains in this tab until you clear it or close the page. AI analysis sends the transcript to Cloudflare Workers AI for processing; provider processing is not the same as local-only analysis.</p>
+<div class="fields"><label>Ticker <input id="ticker" placeholder="e.g. NVDA" maxlength="12" autocomplete="off" spellcheck="false"></label><label>Reporting period <input id="period" placeholder="e.g. FY2026 Q3" maxlength="40" autocomplete="off"></label></div>
+<label class="upload" for="transcriptFile">↑ Select plain-text transcript (.txt)<small>Processed locally in your browser before analysis; max 180 KB</small></label><input id="transcriptFile" type="file" accept=".txt,text/plain">
+<label class="field">Or paste transcript<textarea id="transcript" rows="17" maxlength="180000" spellcheck="false" placeholder="Paste prepared remarks and analyst Q&A here…"></textarea></label>
+<div class="editor-footer"><span id="count" aria-live="polite">0 characters</span><button type="button" id="clear" class="quiet-btn">Clear session</button></div>
+<label class="check"><input type="checkbox" id="market" checked> Include dated public MARKET-DEX quote context when available</label>
+<div class="market-preview" id="marketPreview">Public market context: awaiting ticker.</div>
+<button type="button" id="analyze" class="primary run">Analyze earnings →</button><p id="status" class="status" role="status">No transcript submitted.</p></section>
+<section class="glass output"><div class="output-head"><div><span class="eyebrow">RESEARCH OUTPUT</span><h2>Investment committee view</h2></div><span id="state" class="state">AWAITING INPUT</span></div>
+<nav class="outputs" aria-label="Output sections"><a href="#verdict">Verdict</a><a href="#details">Detailed read</a><a href="#limitations">Evidence gaps</a></nav>
+<section id="verdict"><h3>Executive verdict</h3><p class="muted" id="verdictText">Upload or paste a transcript to generate a source-constrained assessment.</p></section>
+<section id="details"><h3>Analysis</h3><div id="report" class="report placeholder">No analysis yet. Results are never saved to local storage or the repository.</div></section>
+<section id="limitations"><h3>Evidence boundaries</h3><p class="hint">Transcript statements are not verified SEC filings, market consensus, or a trading reaction. Public MARKET-DEX pricing is dated end-of-day market context, not necessarily the earnings-event move. The model must identify missing evidence and refrain from inventing figures.</p></section>
+<div class="actions"><button type="button" class="quiet-btn" id="download" disabled>Download report (.txt)</button><button type="button" class="quiet-btn" id="downloadJson" disabled>Download structured JSON</button></div></section></div>
+<footer>MARKET-DEX · Analysis is informational, not investment advice. Private uploads are not committed to the market-data pipeline. <a href="../index.html">Return to terminal</a></footer></main>
+<script src="earnings.js" defer></script></body></html>

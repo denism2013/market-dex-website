@@ -434,6 +434,15 @@
       "name": "iShares MSCI UAE ETF",
       "lat": 23.42,
       "lon": 53.85
+    },
+    {
+      "symbol": "SPY",
+      "country": "United States",
+      "region": "North America",
+      "segment": "Broad Market",
+      "name": "SPDR S&P 500 ETF Trust",
+      "lat": 39.83,
+      "lon": -98.58
     }
   ],
   "ratio_symbols": [

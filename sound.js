@@ -1,17 +1,21 @@
 'use strict';
 (() => {
- let context=null,enabled=true,introPlayed=false,unlocked=false;
- try{enabled=localStorage.getItem('mdx-arcade-sound')!=='off';}catch{}
- const notes=[72,76,79,81,79,76,74,84];
- function tone(midi,start,duration,gain=.065,type='square'){const oscillator=context.createOscillator(),amp=context.createGain();oscillator.type=type;oscillator.frequency.value=440*Math.pow(2,(midi-69)/12);amp.gain.setValueAtTime(0,start);amp.gain.linearRampToValueAtTime(gain,start+.008);amp.gain.setValueAtTime(gain*.7,start+duration*.55);amp.gain.exponentialRampToValueAtTime(.0001,start+duration);oscillator.connect(amp);amp.connect(context.destination);oscillator.start(start);oscillator.stop(start+duration+.02);}
- function paint(message){unlocked=!!context&&context.state==='running';const button=document.querySelector('#soundToggle');if(!button)return;button.textContent=!enabled?'♪ Sound off':unlocked?'♪ Sound on':'♪ Enable sound';button.setAttribute('aria-pressed',String(enabled&&unlocked));button.title='Enable or mute original arcade sounds. Use Test sound to replay the tune.';const status=document.querySelector('#soundStatus');if(status)status.textContent=message||(!enabled?'Sound muted.':unlocked?'Audio ready.':'Click Enable sound or Test sound to allow playback.');}
- function intro(replay=false){if((introPlayed&&!replay)||!enabled||!unlocked)return;introPlayed=true;const start=context.currentTime+.03;notes.forEach((note,i)=>tone(note,start+i*.14,i===7?.38:.12,.06));[48,55,60].forEach((note,i)=>tone(note,start+i*.42,.36,.045,'triangle'));}
- function save(){try{localStorage.setItem('mdx-arcade-sound',enabled?'on':'off');}catch{}}
- async function unlock(replay=false){if(!enabled)return false;try{if(!context){const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)throw new Error('Audio unavailable');context=new Audio();context.onstatechange=()=>paint();}if(context.state!=='running')await context.resume();paint();if(unlocked)intro(replay);return unlocked;}catch{paint('Audio could not start. Check browser or device sound settings, then click Test sound.');return false;}}
- function click(){if(!enabled||!context||context.state!=='running')return;const start=context.currentTime;tone(88,start,.035,.05);tone(95,start+.03,.045,.035);}
- document.addEventListener('pointerdown',event=>{if(event.target.closest('#soundToggle,#soundReplay'))return;if(enabled&&(!context||context.state!=='running'))unlock();},{capture:true,passive:true});
- document.addEventListener('keydown',event=>{if(enabled&&(!context||context.state!=='running')&&['Enter',' '].includes(event.key))unlock();},{capture:true});
- document.addEventListener('click',event=>{if(event.target.closest('#soundToggle,#soundReplay'))return;if(event.target.closest('button,a,select,summary,[role="tab"]'))click();},true);
- window.addEventListener('mdx:ui-click',click);
- document.addEventListener('DOMContentLoaded',()=>{paint();document.querySelector('#soundToggle').addEventListener('click',async()=>{if(enabled&&context&&context.state==='running'){enabled=false;save();await context.suspend();paint();}else{enabled=true;save();await unlock();}});document.querySelector('#soundReplay').addEventListener('click',async()=>{enabled=true;save();if(await unlock(true))paint('Startup tune played. If silent, check device volume and whether this browser tab is muted.');});});
+ const $=id=>document.querySelector(id);let enabled=true,volume=.65,started=false,intro=null,pool=[],cursor=0;
+ try{enabled=localStorage.getItem('mdx-arcade-sound')!=='off';const saved=Number(localStorage.getItem('mdx-arcade-volume'));if(saved>0&&saved<=1)volume=saved;}catch{}
+ function save(){try{localStorage.setItem('mdx-arcade-sound',enabled?'on':'off');localStorage.setItem('mdx-arcade-volume',String(volume));}catch{}}
+ function status(message){$('#soundStatus').textContent=message;$('#audioPlaybackStatus').textContent=message;}
+ function paint(){const b=$('#soundToggle');b.textContent=enabled?'♪ Sound on':'♪ Sound off';b.setAttribute('aria-pressed',String(enabled));b.title='Enable or mute arcade audio. Test sound opens a real audio player.';}
+ function volumes(){for(const a of [intro,...pool])if(a){a.volume=volume;a.muted=!enabled;}$('#soundVolume').value=String(Math.round(volume*100));$('#soundVolumeValue').textContent=Math.round(volume*100)+'%';}
+ function failed(error){status(error?.name==='NotAllowedError'?'Playback blocked. Press Play in the audio player to allow sound.':'Audio could not play. Try opening the tune directly below.');}
+ function playIntro(){enabled=true;save();paint();volumes();intro.pause();intro.currentTime=0;const promise=intro.play();promise?.catch(failed);}
+ function click(){if(!enabled||!started)return;const a=pool[cursor++%pool.length];a.currentTime=0;a.play()?.catch(()=>{});}
+ function activate(event){if(event.target.closest('#soundToggle,#soundReplay,#soundSettings,#soundDialog'))return;if(intro&&enabled&&!started){started=true;playIntro();}}
+ document.addEventListener('pointerdown',activate,{capture:true,passive:true});document.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key))activate(event);},true);
+ document.addEventListener('click',event=>{if(!event.target.closest('#soundToggle,#soundReplay,#soundSettings,#soundDialog')&&event.target.closest('button,a,select,summary,[role="tab"]'))click();},true);window.addEventListener('mdx:ui-click',click);
+ document.addEventListener('DOMContentLoaded',()=>{
+  intro=$('#startupAudio');pool=Array.from({length:3},()=>{const a=new Audio('assets/arcade-click.wav');a.preload='auto';return a;});paint();volumes();status(enabled?'Sound enabled. First interaction starts the tune; Test sound opens the player.':'Sound muted.');
+  intro.addEventListener('playing',()=>{started=true;status('Playing the original arcade startup tune.');});intro.addEventListener('ended',()=>status('Startup tune finished. Interface click sounds are enabled.'));intro.addEventListener('error',()=>failed());intro.addEventListener('play',()=>{enabled=true;save();paint();volumes();});
+  $('#soundToggle').addEventListener('click',()=>{if(enabled){enabled=false;for(const a of [intro,...pool])a.pause();save();paint();volumes();status('Sound muted.');}else{started=true;playIntro();}});
+  $('#soundReplay').addEventListener('click',()=>{$('#soundDialog').showModal();started=true;playIntro();});$('#soundSettings').addEventListener('click',()=>$('#soundDialog').showModal());$('#soundVolume').addEventListener('input',event=>{volume=Number(event.target.value)/100;save();volumes();});
+ });
 })();

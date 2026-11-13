@@ -1,0 +1,42 @@
+name: MARKET-DEX verified EOD refresh
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/daily-refresh.yml'
+  schedule:
+    - cron: '0 17 * * 1-5'
+      timezone: 'America/New_York'
+permissions:
+  contents: write
+concurrency:
+  group: market-dex-daily-snapshot
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install free data dependencies
+        run: pip install -r requirements.txt
+      - name: Fetch, validate, and publish source-dated snapshots
+        run: python scripts/update_market_data.py
+      - name: Commit only when source observations changed
+        shell: bash
+        run: |
+          git config user.name 'market-dex-data-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/latest.json data/bootstrap.js
+          if git diff --cached --quiet; then
+            echo 'No newer verified observation; leaving published snapshot unchanged.'
+          else
+            git commit -m 'data: update verified market and Treasury EOD observations'
+            git push origin HEAD:main
+          fi

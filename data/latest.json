@@ -1,6 +1,6 @@
 {
   "schema": "market-dex.snapshot.v1",
-  "generated_at": "2026-11-13T22:39:47.824637Z",
+  "generated_at": "2026-11-13T23:40:24.673551Z",
   "refresh_window": "17:00 America/New_York business days",
   "frequency": "daily_eod",
   "status": "complete",
@@ -17,7 +17,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/SPY/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 754.369995,
       "prev_close": 757.119995,
@@ -6057,7 +6057,8 @@
         "rsi14": 45.15,
         "realized_vol_20d": 22.29
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "QQQ": {
       "symbol": "QQQ",
@@ -6069,7 +6070,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/QQQ/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 679.890015,
       "prev_close": 688.169983,
@@ -12109,7 +12110,8 @@
         "rsi14": 40.86,
         "realized_vol_20d": 35.92
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "IWM": {
       "symbol": "IWM",
@@ -12121,7 +12123,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/IWM/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 277.540009,
       "prev_close": 278.440002,
@@ -18161,7 +18163,8 @@
         "rsi14": 50.54,
         "realized_vol_20d": 25.13
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "DIA": {
       "symbol": "DIA",
@@ -18173,7 +18176,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/DIA/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 523.150024,
       "prev_close": 522.469971,
@@ -24213,7 +24216,8 @@
         "rsi14": 50.13,
         "realized_vol_20d": 20.74
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "VTI": {
       "symbol": "VTI",
@@ -24225,7 +24229,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/VTI/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 371.109985,
       "prev_close": 372.619995,
@@ -30265,7 +30269,8 @@
         "rsi14": 45.97,
         "realized_vol_20d": 22.14
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "VEA": {
       "symbol": "VEA",
@@ -30277,7 +30282,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/VEA/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 69.440002,
       "prev_close": 69.43,
@@ -36317,7 +36322,8 @@
         "rsi14": 50.52,
         "realized_vol_20d": 21.45
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "VWO": {
       "symbol": "VWO",
@@ -36329,7 +36335,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/VWO/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 56.380001,
       "prev_close": 56.43,
@@ -42369,7 +42375,8 @@
         "rsi14": 49.38,
         "realized_vol_20d": 23.07
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "EEM": {
       "symbol": "EEM",
@@ -42381,7 +42388,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/EEM/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 60.919998,
       "prev_close": 61.139999,
@@ -48421,7 +48428,8 @@
         "rsi14": 46.87,
         "realized_vol_20d": 32.51
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "AGG": {
       "symbol": "AGG",
@@ -48433,7 +48441,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/AGG/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 95.089996,
       "prev_close": 95.220001,
@@ -54473,7 +54481,8 @@
         "rsi14": 35.88,
         "realized_vol_20d": 5.62
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "TLT": {
       "symbol": "TLT",
@@ -54485,7 +54494,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/TLT/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 79.379997,
       "prev_close": 79.720001,
@@ -60525,7 +60534,8 @@
         "rsi14": 30.17,
         "realized_vol_20d": 12.47
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "IEF": {
       "symbol": "IEF",
@@ -60537,7 +60547,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/IEF/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 90.040001,
       "prev_close": 90.209999,
@@ -66577,7 +66587,8 @@
         "rsi14": 38.05,
         "realized_vol_20d": 7.3
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "SHY": {
       "symbol": "SHY",
@@ -66589,7 +66600,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/SHY/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 81.169998,
       "prev_close": 81.139999,
@@ -72629,7 +72640,8 @@
         "rsi14": 39.01,
         "realized_vol_20d": 2.4
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "GLD": {
       "symbol": "GLD",
@@ -72641,7 +72653,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/GLD/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 355.450012,
       "prev_close": 354.890015,
@@ -78681,7 +78693,8 @@
         "rsi14": 42.56,
         "realized_vol_20d": 28.07
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "USO": {
       "symbol": "USO",
@@ -78693,7 +78706,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/USO/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 145.580002,
       "prev_close": 146.070007,
@@ -84733,7 +84746,8 @@
         "rsi14": 28.66,
         "realized_vol_20d": 49.02
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "UUP": {
       "symbol": "UUP",
@@ -84745,7 +84759,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/UUP/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 29.5,
       "prev_close": 29.42,
@@ -90785,7 +90799,8 @@
         "rsi14": 68.15,
         "realized_vol_20d": 5.52
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLB": {
       "symbol": "XLB",
@@ -90797,7 +90812,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLB/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 52.23,
       "prev_close": 52.34,
@@ -96837,7 +96852,8 @@
         "rsi14": 54.9,
         "realized_vol_20d": 20.42
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLC": {
       "symbol": "XLC",
@@ -96849,7 +96865,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLC/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 108.690002,
       "prev_close": 107.559998,
@@ -102889,7 +102905,8 @@
         "rsi14": 65.07,
         "realized_vol_20d": 22.09
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLE": {
       "symbol": "XLE",
@@ -102901,7 +102918,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLE/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 64.959999,
       "prev_close": 64.330002,
@@ -108941,7 +108958,8 @@
         "rsi14": 34.38,
         "realized_vol_20d": 30.87
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLF": {
       "symbol": "XLF",
@@ -108953,7 +108971,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLF/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 58.68,
       "prev_close": 58.209999,
@@ -114993,7 +115011,8 @@
         "rsi14": 64.06,
         "realized_vol_20d": 21.61
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLI": {
       "symbol": "XLI",
@@ -115005,7 +115024,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLI/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 168.779999,
       "prev_close": 169.440002,
@@ -121045,7 +121064,8 @@
         "rsi14": 53.07,
         "realized_vol_20d": 25.29
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLK": {
       "symbol": "XLK",
@@ -121057,7 +121077,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLK/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 170.279999,
       "prev_close": 173.770004,
@@ -127097,7 +127117,8 @@
         "rsi14": 36.14,
         "realized_vol_20d": 45.69
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLP": {
       "symbol": "XLP",
@@ -127109,7 +127130,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLP/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 92.349998,
       "prev_close": 91.059998,
@@ -133149,7 +133170,8 @@
         "rsi14": 64.74,
         "realized_vol_20d": 23.79
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLRE": {
       "symbol": "XLRE",
@@ -133161,7 +133183,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLRE/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 44.369999,
       "prev_close": 44.360001,
@@ -139201,7 +139223,8 @@
         "rsi14": 63.7,
         "realized_vol_20d": 19.65
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLU": {
       "symbol": "XLU",
@@ -139213,7 +139236,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLU/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 44.040001,
       "prev_close": 43.810001,
@@ -145253,7 +145276,8 @@
         "rsi14": 69.55,
         "realized_vol_20d": 15.32
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLV": {
       "symbol": "XLV",
@@ -145265,7 +145289,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLV/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 188.850006,
       "prev_close": 187.830002,
@@ -151305,7 +151329,8 @@
         "rsi14": 70.42,
         "realized_vol_20d": 20.86
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XLY": {
       "symbol": "XLY",
@@ -151317,7 +151342,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XLY/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 119.980003,
       "prev_close": 120.459999,
@@ -157357,7 +157382,8 @@
         "rsi14": 63.68,
         "realized_vol_20d": 27.14
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "AAPL": {
       "symbol": "AAPL",
@@ -157369,7 +157395,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/AAPL/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 356.269989,
       "prev_close": 354.880005,
@@ -163409,7 +163435,8 @@
         "rsi14": 58.46,
         "realized_vol_20d": 27.53
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "MSFT": {
       "symbol": "MSFT",
@@ -163421,7 +163448,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/MSFT/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 523.880005,
       "prev_close": 523.0,
@@ -169461,7 +169488,8 @@
         "rsi14": 46.9,
         "realized_vol_20d": 36.51
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "NVDA": {
       "symbol": "NVDA",
@@ -169473,7 +169501,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/NVDA/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 162.850006,
       "prev_close": 166.190002,
@@ -175513,7 +175541,8 @@
         "rsi14": 19.12,
         "realized_vol_20d": 54.01
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "AMZN": {
       "symbol": "AMZN",
@@ -175525,7 +175554,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/AMZN/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 266.660004,
       "prev_close": 267.440002,
@@ -181565,7 +181594,8 @@
         "rsi14": 62.46,
         "realized_vol_20d": 41.74
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "GOOGL": {
       "symbol": "GOOGL",
@@ -181577,7 +181607,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/GOOGL/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 295.769989,
       "prev_close": 298.700012,
@@ -187617,7 +187647,8 @@
         "rsi14": 38.43,
         "realized_vol_20d": 54.19
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "META": {
       "symbol": "META",
@@ -187629,7 +187660,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/META/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 641.690002,
       "prev_close": 623.609985,
@@ -193669,7 +193700,8 @@
         "rsi14": 53.31,
         "realized_vol_20d": 41.42
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "TSLA": {
       "symbol": "TSLA",
@@ -193681,7 +193713,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/TSLA/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 390.220001,
       "prev_close": 397.450012,
@@ -199721,7 +199753,8 @@
         "rsi14": 49.53,
         "realized_vol_20d": 61.03
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "JPM": {
       "symbol": "JPM",
@@ -199733,7 +199766,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/JPM/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 346.190002,
       "prev_close": 342.820007,
@@ -205773,7 +205806,8 @@
         "rsi14": 59.09,
         "realized_vol_20d": 27.42
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "XOM": {
       "symbol": "XOM",
@@ -205785,7 +205819,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/XOM/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 170.589996,
       "prev_close": 169.779999,
@@ -211825,7 +211859,8 @@
         "rsi14": 33.4,
         "realized_vol_20d": 31.04
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "AVGO": {
       "symbol": "AVGO",
@@ -211837,7 +211872,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/AVGO/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 347.01001,
       "prev_close": 364.359985,
@@ -217877,7 +217912,8 @@
         "rsi14": 54.62,
         "realized_vol_20d": 70.66
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "AMD": {
       "symbol": "AMD",
@@ -217889,7 +217925,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/AMD/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 534.059998,
       "prev_close": 585.299988,
@@ -223929,7 +223965,8 @@
         "rsi14": 50.28,
         "realized_vol_20d": 122.88
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "NFLX": {
       "symbol": "NFLX",
@@ -223941,7 +223978,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/NFLX/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 62.150002,
       "prev_close": 62.689999,
@@ -229981,7 +230018,8 @@
         "rsi14": 43.83,
         "realized_vol_20d": 37.23
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "COST": {
       "symbol": "COST",
@@ -229993,7 +230031,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/COST/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 1106.209961,
       "prev_close": 1092.209961,
@@ -236033,7 +236071,8 @@
         "rsi14": 73.76,
         "realized_vol_20d": 22.45
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "WMT": {
       "symbol": "WMT",
@@ -236045,7 +236084,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/WMT/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 128.089996,
       "prev_close": 126.190002,
@@ -242085,7 +242124,8 @@
         "rsi14": 66.24,
         "realized_vol_20d": 25.62
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "V": {
       "symbol": "V",
@@ -242097,7 +242137,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/V/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 425.76001,
       "prev_close": 420.309998,
@@ -248137,7 +248177,8 @@
         "rsi14": 63.79,
         "realized_vol_20d": 25.77
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "MA": {
       "symbol": "MA",
@@ -248149,7 +248190,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/MA/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 661.190002,
       "prev_close": 652.599976,
@@ -254189,7 +254230,8 @@
         "rsi14": 67.92,
         "realized_vol_20d": 28.42
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "BAC": {
       "symbol": "BAC",
@@ -254201,7 +254243,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/BAC/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 51.02,
       "prev_close": 50.509998,
@@ -260241,7 +260283,8 @@
         "rsi14": 52.98,
         "realized_vol_20d": 24.78
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "GS": {
       "symbol": "GS",
@@ -260253,7 +260296,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/GS/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 916.559998,
       "prev_close": 913.599976,
@@ -266293,7 +266336,8 @@
         "rsi14": 54.74,
         "realized_vol_20d": 39.38
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "LLY": {
       "symbol": "LLY",
@@ -266305,7 +266349,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/LLY/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 1443.5,
       "prev_close": 1427.280029,
@@ -272345,7 +272389,8 @@
         "rsi14": 75.0,
         "realized_vol_20d": 37.91
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "UNH": {
       "symbol": "UNH",
@@ -272357,7 +272402,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/UNH/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 407.459991,
       "prev_close": 405.130005,
@@ -278397,7 +278442,8 @@
         "rsi14": 47.29,
         "realized_vol_20d": 24.38
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "CAT": {
       "symbol": "CAT",
@@ -278409,7 +278455,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/CAT/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 600.200012,
       "prev_close": 605.280029,
@@ -284449,7 +284495,8 @@
         "rsi14": 33.98,
         "realized_vol_20d": 60.59
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "SMH": {
       "symbol": "SMH",
@@ -284461,7 +284508,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/SMH/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 486.75,
       "prev_close": 501.730011,
@@ -290501,7 +290548,8 @@
         "rsi14": 39.17,
         "realized_vol_20d": 67.43
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "SOXX": {
       "symbol": "SOXX",
@@ -290513,7 +290561,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/SOXX/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 149.300003,
       "prev_close": 154.990005,
@@ -296553,7 +296601,8 @@
         "rsi14": 41.83,
         "realized_vol_20d": 78.7
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "RSP": {
       "symbol": "RSP",
@@ -296565,7 +296614,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/RSP/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 221.160004,
       "prev_close": 220.720001,
@@ -302605,7 +302654,8 @@
         "rsi14": 57.03,
         "realized_vol_20d": 17.7
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "SCHD": {
       "symbol": "SCHD",
@@ -302617,7 +302667,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/SCHD/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 36.119999,
       "prev_close": 35.93,
@@ -308657,7 +308707,8 @@
         "rsi14": 59.76,
         "realized_vol_20d": 16.43
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "HYG": {
       "symbol": "HYG",
@@ -308669,7 +308720,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/HYG/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 76.940002,
       "prev_close": 76.980003,
@@ -314709,7 +314760,8 @@
         "rsi14": 45.96,
         "realized_vol_20d": 5.27
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "LQD": {
       "symbol": "LQD",
@@ -314721,7 +314773,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/LQD/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 102.809998,
       "prev_close": 103.050003,
@@ -320761,7 +320813,8 @@
         "rsi14": 36.59,
         "realized_vol_20d": 7.34
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "TIP": {
       "symbol": "TIP",
@@ -320773,7 +320826,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/TIP/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 104.610001,
       "prev_close": 104.769997,
@@ -326813,7 +326866,8 @@
         "rsi14": 20.69,
         "realized_vol_20d": 4.72
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     },
     "SLV": {
       "symbol": "SLV",
@@ -326825,7 +326879,7 @@
       "provider": "Yahoo Finance via yfinance",
       "source_url": "https://finance.yahoo.com/quote/SLV/history/",
       "price_basis": "unadjusted_daily_close",
-      "collected_at": "2026-11-13T17:39:47.824637-05:00",
+      "collected_at": "2026-11-13T18:40:24.673551-05:00",
       "as_of": "2026-11-13",
       "close": 44.130001,
       "prev_close": 45.119999,
@@ -332865,7 +332919,8 @@
         "rsi14": 34.89,
         "realized_vol_20d": 43.31
       },
-      "status": "observed"
+      "status": "observed",
+      "post_close_rechecked_at": "2026-11-13T23:40:24.673551Z"
     }
   },
   "treasury": {
@@ -333396,5 +333451,11 @@
     "treasury_loaded": true,
     "treasury_fresh_source": true
   },
-  "warnings": []
+  "warnings": [],
+  "post_close_recheck": {
+    "checked_at": "2026-11-13T23:40:24.673551Z",
+    "newly_verified": 55,
+    "retained_previous": 0,
+    "note": "Daily source bars rechecked after 17:00 New York; providers can revise these observations later."
+  }
 }

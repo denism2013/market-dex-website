@@ -454,10 +454,32 @@
     "AMZN",
     "GOOGL",
     "META",
-    "TSLA"
+    "TSLA",
+    "XLB",
+    "XLC",
+    "XLE",
+    "XLF",
+    "XLI",
+    "XLK",
+    "XLRE",
+    "XLU",
+    "XLV"
   ],
   "index_funds": {
     "SPY": "S&P 500",
     "DIA": "Dow Jones 30"
+  },
+  "sector_funds": {
+    "XLB": "Materials",
+    "XLC": "Communication services",
+    "XLE": "Energy",
+    "XLF": "Financials",
+    "XLI": "Industrials",
+    "XLK": "Information technology",
+    "XLP": "Consumer staples",
+    "XLRE": "Real estate",
+    "XLU": "Utilities",
+    "XLV": "Health care",
+    "XLY": "Consumer discretionary"
   }
 }

@@ -1,0 +1,7 @@
+/data/*.json
+  Cache-Control: public, max-age=0, must-revalidate
+  Access-Control-Allow-Origin: *
+/assets/world-110m.json
+  Cache-Control: public, max-age=86400
+/downloads/*.zip
+  Content-Disposition: attachment

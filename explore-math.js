@@ -3,7 +3,7 @@
  const MAG7=['AAPL','MSFT','NVDA','AMZN','GOOGL','META','TSLA'];
  const finite=n=>Number.isFinite(n)&&n>0;
  function lookup(series){return new Map((series?.history||[]).filter(b=>finite(b.close)).map(b=>[b.date,b.close]));}
- function endpoints(series,days){const h=series?.history||[];return h.length>days?[h[h.length-1-days].date,h.at(-1).date]:null;}
+ function endpoints(series,days){const h=series?.history||[];if(days==='ytd'){const end=h.at(-1)?.date,base=h.filter(b=>b.date<end?.slice(0,4)+'-01-01').at(-1);return base?[base.date,end]:null;}return h.length>days?[h[h.length-1-days].date,h.at(-1).date]:null;}
  function change(series,pair){if(!pair)return null;const m=lookup(series),a=m.get(pair[0]),b=m.get(pair[1]);return finite(a)&&finite(b)?(b/a-1)*100:null;}
  function ratio(series,top,bottom){const names=[...(top==='MAG7'?MAG7:[top]),bottom],maps=names.map(n=>lookup(series[n]));if(maps.some(m=>!m.size))return[];const dates=[...maps[0].keys()].filter(d=>maps.every(m=>m.has(d))).sort();if(!dates.length)return[];const base=maps.map(m=>m.get(dates[0]));return dates.map(date=>{const numerator=top==='MAG7'?MAG7.reduce((s,_,i)=>s+maps[i].get(date)/base[i],0)/7:maps[0].get(date)/base[0];const denominator=maps.at(-1).get(date)/base.at(-1);return {date,close:numerator/denominator*100};});}
  function ranking(index,series,pair){return (index?.members||[]).map(m=>({...m,value:change(series[m.symbol],pair),status:series[m.symbol]?.status})).filter(m=>Number.isFinite(m.value)).sort((a,b)=>b.value-a.value||a.symbol.localeCompare(b.symbol));}

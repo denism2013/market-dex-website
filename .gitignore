@@ -1,2 +1,4 @@
 __pycache__/
 *.pyc
+
+data/lab-price-history.json

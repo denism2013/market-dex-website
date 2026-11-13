@@ -1,0 +1,14 @@
+'use strict';
+// Starts before the deferred application scripts. No equity snapshot dependency.
+(() => {
+ const listeners=new Set(),state={display:null,full:null,loadingRecent:false,loadingFull:false,error:'',checkedAt:null};
+ const valid=d=>d?.schema==='market-dex.treasury-history.v1'&&Array.isArray(d.history)&&d.history.length>0;
+ function notify(){for(const fn of listeners)fn({...state});}
+ try{const cached=JSON.parse(localStorage.getItem('mdx-fred-recent-v1'));if(valid(cached))state.display={...cached,client_cached:true};}catch{}
+ let recentRequest=null,fullRequest=null;
+ async function request(url,force,priority){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url,{cache:force?'reload':'default',signal:controller.signal,priority});if(!response.ok)throw Error('HTTP '+response.status);const data=await response.json();if(!valid(data))throw Error('Invalid Treasury archive');return data;}finally{clearTimeout(timer);}}
+ function recent(force=false){if(recentRequest)return recentRequest;state.loadingRecent=true;notify();recentRequest=request('data/treasury-recent.json',force,'high').then(data=>{data.history_scope='recent';if(!state.full||state.full.as_of<data.as_of)state.display=data;state.checkedAt=new Date().toISOString();state.error='';try{localStorage.setItem('mdx-fred-recent-v1',JSON.stringify(data));}catch{}return data;}).catch(()=>{state.error='Could not check the latest published FRED file. Showing available dated data.';}).finally(()=>{state.loadingRecent=false;recentRequest=null;notify();});return recentRequest;}
+ function full(force=false){if(fullRequest)return fullRequest;if(state.full&&!force)return Promise.resolve(state.full);state.loadingFull=true;notify();fullRequest=request('data/treasury-history.json',force,'low').then(data=>{state.full={...data,history_scope:'full'};if(!state.display||data.as_of>=state.display.as_of)state.display=state.full;state.checkedAt=new Date().toISOString();state.error='';return data;}).catch(()=>{state.error='Full FRED history could not load. Recent observations remain available; use Refresh FRED to retry.';}).finally(()=>{state.loadingFull=false;fullRequest=null;notify();});return fullRequest;}
+ window.MDX_RATES={subscribe(fn){listeners.add(fn);fn({...state});return()=>listeners.delete(fn);},refresh(){return Promise.all([recent(true),full(true)]);},full};
+ recent().then(()=>full());
+})();

@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>MARKET-DEX · Loading experimental view</title><style>html,body{margin:0;background:#070b16;color:#eaf5ff;font:14px system-ui;height:100%}body{display:grid;place-items:center}.loading{max-width:520px;padding:28px;text-align:center}.loading h1{color:#d8b1ff;font-size:22px}.loading p{color:#a9bbd1}.loadbar{height:4px;background:#233045;border-radius:4px;overflow:hidden;margin:24px auto}.loadbar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#16e6a2,#19e2ef,#ce49fc);transition:width .2s}</style></head><body><div class="loading"><h1>Preparing Sector Galaxy Rotation</h1><p id="status">Loading original visualization assets on demand…</p><div class="loadbar"><span id="bar"></span></div><p>Heavy 3D effects start only after the experiment opens.</p></div><script>
+(async function(){
+ const total=13, prefix='sector';
+ try {
+ const files=[];
+ for(let i=0;i<total;i+=4){
+  const batch=Array.from({length:Math.min(4,total-i)},(_,j)=>i+j);
+  const fetched=await Promise.all(batch.map(async n=>{
+   const url='./parts/'+prefix+'-'+String(n).padStart(3,'0')+'.txt';
+   const response=await fetch(url,{cache:'force-cache'});
+   if(!response.ok) throw new Error('Missing application asset: '+url+' (HTTP '+response.status+')');
+   return [n,await response.text()];
+  }));
+  for(const [n,s] of fetched) files[n]=s;
+  const progress=Math.round(Math.min(total,i+batch.length)*100/total);
+  document.getElementById('bar').style.width=progress+'%';
+  document.getElementById('status').textContent='Loading original files: '+progress+'%';
+ }
+ const html=files.join('');
+ if(!html.toLowerCase().includes('<html')||!html.toLowerCase().includes('</html>'))throw new Error('Incomplete application document');
+ document.open(); document.write(html); document.close();
+ } catch(err) {
+  document.getElementById('status').textContent='Unable to load this experiment: '+err.message;
+  document.getElementById('status').style.color='#ff93b3';
+ }
+})();
+</script></body></html>

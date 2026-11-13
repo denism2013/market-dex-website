@@ -7,7 +7,7 @@ def write(name,data):(DATA/name).write_text(json.dumps(data,separators=(',',':')
 def main():
     rates=json.loads((DATA/'treasury-history.json').read_text());rates['coverage']={'available_from':rates['history'][0]['date'],'total_observations':len(rates['history'])};rates['history']=rates['history'][-260:];rates['history_scope']='recent';write('treasury-recent.json',rates)
     market=json.loads((DATA/'latest.json').read_text());market['history_scope']='preview'
-    for value in market['markets'].values():value['history']=[{k:b[k] for k in ('date','close','volume') if k in b} for b in value.get('history',[])[-260:]]
+    for value in market['markets'].values():value['history']=[{k:b[k] for k in ('date','open','high','low','close','volume') if k in b} for b in value.get('history',[])[-260:]]
     write('market-preview.json',market)
     explore=json.loads((DATA/'explore.json').read_text());history=DATA/'lab-price-history.json';raw=json.loads(history.read_text()) if history.exists() else None
     if raw:

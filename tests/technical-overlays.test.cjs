@@ -1,0 +1,14 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const context={window:{addEventListener(){}},document:{addEventListener(){}},console};vm.runInNewContext(fs.readFileSync('technical.js','utf8'),context);const {validOHLC,candlePatterns,pivotLevels}=context.window.MDX_TECH;
+const b=(open,high,low,close,date='2026-11-01')=>({open,high,low,close,date,volume:100});
+assert.equal(validOHLC(b(10,12,9,11)),true);assert.equal(validOHLC(b(10,9,8,11)),false);assert.equal(validOHLC(b(10,12,11,11)),false);assert.equal(validOHLC({close:10}),false);assert.equal(validOHLC(b(null,12,9,11)),false);
+assert.equal(candlePatterns([{close:10,date:'2026-11-01'}]).length,0);
+assert.equal(candlePatterns([b(10,12,8,10.1)])[0].name,'Doji');
+assert.equal(candlePatterns([b(10,10.7,8,10.5)])[0].name,'Long lower wick');
+assert.ok(candlePatterns([b(12,13,9,10),b(9.5,13,9,12.5)]).some(x=>x.name==='Bullish body engulfing'));
+assert.ok(candlePatterns([b(10,13,9,12),b(12.5,13,9,9.5)]).some(x=>x.name==='Bearish body engulfing'));
+assert.equal(candlePatterns([b(10,10,10,10)]).length,0);
+const bars=[b(10,11,9,10,'2026-11-01'),b(11,12,10,11,'2026-11-02'),b(13,15,12,13,'2026-11-03'),b(12,13,11,12,'2026-11-04'),b(11,12,10,11,'2026-11-05')];
+assert.equal(pivotLevels(bars.slice(0,4)).length,0,'pivot unavailable until second later observation');const p=pivotLevels(bars);assert.equal(p.length,1);assert.equal(p[0].price,15);assert.equal(p[0].confirmedIndex,4);assert.equal(p[0].confirmedDate,'2026-11-05');assert.equal(pivotLevels(bars.map((x,i)=>i===1?{...x,high:null}:x)).length,0);
+assert.equal(pivotLevels(bars.map(x=>({...x,high:15}))).length,0,'equal highs are not strict pivots');
+console.log('Technical overlay validation, candle geometry, insufficient OHLC and confirmation timing passed.');

@@ -1,0 +1,29 @@
+name: Earnings Lab checks
+on:
+  pull_request:
+    paths:
+      - 'earnings/**'
+      - 'functions/api/earnings.js'
+      - 'index.html'
+      - 'tests/earnings.test.cjs'
+      - '.github/workflows/earnings-test.yml'
+  push:
+    branches:
+      - 'feature/earnings-intelligence-lab-20261113'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: |
+          node --check earnings/earnings.js
+          node --check --input-type=module < functions/api/earnings.js
+      - name: Structural privacy tests
+        run: node tests/earnings.test.cjs
+      - name: Existing regression tests
+        run: |
+          for file in tests/*.test.cjs; do node "$file"; done

@@ -1,0 +1,2 @@
+const assert=require('node:assert/strict'),{sample,nearest}=require('../curve-math.js');
+const rows=Array.from({length:1000},(_,i)=>({date:String(i)}));const reduced=sample(rows,100,'501');assert.equal(reduced.length,100);assert.equal(reduced[0],rows[0]);assert.equal(reduced.at(-1),rows.at(-1));assert(reduced.includes(rows[501]));assert.equal(nearest([{x:10,y:20,date:'real'}],12,21).date,'real');assert.equal(nearest([{x:10,y:20}],100,200),null);console.log('Curve sampling preserves endpoints and selected observation; picking returns measured points only.');

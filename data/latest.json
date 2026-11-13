@@ -1,0 +1,167 @@
+{
+  "schema": "market-dex.snapshot.v1",
+  "snapshot_id": "official_treasury_seed_20261112",
+  "generated_at": null,
+  "refresh_window": "17:00 America/New_York business days",
+  "frequency": "daily_eod",
+  "status": "treasury_seed_pending_equities",
+  "universe_scope": "curated_35_free_first_not_full_russell_3000",
+  "licensed_live_available": false,
+  "markets": {},
+  "treasury": {
+    "as_of": "2026-11-12",
+    "provider": "U.S. Department of the Treasury",
+    "source_url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value_month=202611&type=daily_treasury_yield_curve",
+    "basis": "daily_constant_maturity_par_yields_pct",
+    "frequency": "published_business_day",
+    "status": "observed",
+    "history": [
+      {
+        "date": "2026-11-02",
+        "yields": {
+          "1M": 4.05,
+          "2M": 4.16,
+          "3M": 4.21,
+          "6M": 4.25,
+          "1Y": 4.38,
+          "2Y": 4.59,
+          "3Y": 4.65,
+          "5Y": 4.7,
+          "7Y": 4.79,
+          "10Y": 4.91,
+          "20Y": 5.31,
+          "30Y": 5.28
+        }
+      },
+      {
+        "date": "2026-11-03",
+        "yields": {
+          "1M": 4.03,
+          "2M": 4.15,
+          "3M": 4.21,
+          "6M": 4.26,
+          "1Y": 4.4,
+          "2Y": 4.61,
+          "3Y": 4.68,
+          "5Y": 4.74,
+          "7Y": 4.83,
+          "10Y": 4.95,
+          "20Y": 5.35,
+          "30Y": 5.32
+        }
+      },
+      {
+        "date": "2026-11-04",
+        "yields": {
+          "1M": 4.01,
+          "2M": 4.15,
+          "3M": 4.21,
+          "6M": 4.25,
+          "1Y": 4.39,
+          "2Y": 4.58,
+          "3Y": 4.64,
+          "5Y": 4.69,
+          "7Y": 4.77,
+          "10Y": 4.9,
+          "20Y": 5.3,
+          "30Y": 5.28
+        }
+      },
+      {
+        "date": "2026-11-05",
+        "yields": {
+          "1M": 4.03,
+          "2M": 4.15,
+          "3M": 4.17,
+          "6M": 4.19,
+          "1Y": 4.28,
+          "2Y": 4.46,
+          "3Y": 4.53,
+          "5Y": 4.59,
+          "7Y": 4.7,
+          "10Y": 4.84,
+          "20Y": 5.27,
+          "30Y": 5.25
+        }
+      },
+      {
+        "date": "2026-11-06",
+        "yields": {
+          "1M": 4.02,
+          "2M": 4.15,
+          "3M": 4.19,
+          "6M": 4.23,
+          "1Y": 4.33,
+          "2Y": 4.51,
+          "3Y": 4.59,
+          "5Y": 4.64,
+          "7Y": 4.74,
+          "10Y": 4.86,
+          "20Y": 5.29,
+          "30Y": 5.26
+        }
+      },
+      {
+        "date": "2026-11-09",
+        "yields": {
+          "1M": 4.04,
+          "2M": 4.19,
+          "3M": 4.24,
+          "6M": 4.26,
+          "1Y": 4.38,
+          "2Y": 4.56,
+          "3Y": 4.58,
+          "5Y": 4.67,
+          "7Y": 4.76,
+          "10Y": 4.88,
+          "20Y": 5.29,
+          "30Y": 5.26
+        }
+      },
+      {
+        "date": "2026-11-10",
+        "yields": {
+          "1M": 4.05,
+          "2M": 4.21,
+          "3M": 4.3,
+          "6M": 4.38,
+          "1Y": 4.56,
+          "2Y": 4.73,
+          "3Y": 4.74,
+          "5Y": 4.81,
+          "7Y": 4.89,
+          "10Y": 4.98,
+          "20Y": 5.39,
+          "30Y": 5.35
+        }
+      },
+      {
+        "date": "2026-11-12",
+        "yields": {
+          "1M": 4.12,
+          "2M": 4.26,
+          "3M": 4.32,
+          "6M": 4.42,
+          "1Y": 4.65,
+          "2Y": 4.86,
+          "3Y": 4.9,
+          "5Y": 4.95,
+          "7Y": 5.02,
+          "10Y": 5.1,
+          "20Y": 5.48,
+          "30Y": 5.43
+        }
+      }
+    ]
+  },
+  "coverage": {
+    "requested": 35,
+    "loaded": 0,
+    "new_market_observations": 0,
+    "reused_previous": 0,
+    "treasury_loaded": true
+  },
+  "warnings": [
+    "Starter includes source-verified 2026-11-02 through 2026-11-12 U.S. Treasury par yields. Yahoo daily equity/ETF observations await the first GitHub Actions updater run."
+  ]
+}

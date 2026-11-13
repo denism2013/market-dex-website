@@ -6,7 +6,7 @@ function discardReport(){report=null;sources.clear();$('report').replaceChildren
 function clearSession(){session++;controller?.abort();controller=null;pdfTask?.destroy().catch(()=>{});pdfTask=null;reading=false;discardReport();$('earningsForm').reset();$('textCount').textContent='0 characters · not uploaded';$('fileStatus').textContent='';for(const url of objectURLs)URL.revokeObjectURL(url);objectURLs.clear();busy(false);status('Session cleared. Transcript, extracted evidence and report removed from this workspace.');}
 $('clearSession').addEventListener('click',clearSession);
 window.addEventListener('pagehide',clearSession);
-window.addEventListener('pageshow',e=>{if(e.persisted)clearSession();});
+window.addEventListener('pageshow',clearSession);
 window.addEventListener('message',e=>{if(e.origin===location.origin&&e.source===window.parent&&e.data?.type==='mdx:clear-session')clearSession();});
 $('cancelAnalysis').addEventListener('click',()=>{session++;controller?.abort();controller=null;busy(false);status('Analysis cancelled. Your input is still in this tab; use Clear Session to erase it.');});
 function count(){const t=$('transcript').value;$('textCount').textContent=`${t.length.toLocaleString()} characters · ${bytes(t).toLocaleString()} UTF-8 bytes · not uploaded`;}
@@ -83,7 +83,7 @@ function refs(host,row){
 function render(p){
  $('report').replaceChildren();$('reportPanel').hidden=false;const r=p.result;const intro=block(`${p.company||p.ticker} · ${p.quarter}`);intro.append(el('p',r.verdict.summary),el('div',`Evidence confidence: ${r.verdict.confidence} · ${p.coverage.parts} source parts · ${p.coverage.reductions} compression passes`,'layer'));
  for(const f of r.findings){const n=block(f.title);n.append(el('div',f.layer,'layer'),el('p',f.detail));refs(n,f);}
- if(r.dashboard.length){const n=block('Earnings dashboard'),wrap=el('div',undefined,'table-wrap'),table=el('table'),head=el('tr');for(const t of ['Metric','Actual','Comparison','Period / units'])head.append(el('th',t));table.append(head);for(const row of r.dashboard){const tr=el('tr');for(const t of [row.metric,row.actual,row.comparison,`${row.period} / ${row.units}`])tr.append(el('td',t));table.append(tr);refs(n,row);}wrap.append(table);n.prepend(wrap);}
+ if(r.dashboard.length){const n=block('Earnings dashboard'),wrap=el('div',undefined,'table-wrap'),table=el('table'),head=el('tr');for(const t of ['Metric','Actual','Comparison','Period / units'])head.append(el('th',t));table.append(head);for(const row of r.dashboard){const tr=el('tr');for(const t of [row.metric,row.actual,row.comparison,`${row.period} / ${row.units}`])tr.append(el('td',t));table.append(tr);refs(n,row);}wrap.append(table);n.append(wrap);}
  for(const s of r.sections){const n=block(s.title);n.append(el('div',s.layer,'layer'),el('p',s.body));refs(n,s);}
  if(r.calculations.length){const n=block('Guidance math / recomputed arithmetic');for(const c of r.calculations){n.append(el('h4',c.label),el('p',`${c.operation}(${c.a}, ${c.b}) = ${c.result} ${c.units}\n${c.period}\n${c.verification}`));refs(n,c);}}
  if(r.qa.length){const n=block('Management Q&A');for(const q of r.qa){n.append(el('h4',`${q.analyst} · ${q.rating}`),el('p',`Question: ${q.question}\nResponse: ${q.answer}\nAssessment: ${q.why}`));refs(n,q);}}

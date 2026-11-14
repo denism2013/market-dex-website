@@ -154,3 +154,8 @@ SEC access and public filing reuse are free and require no API key/account: http
 Overlay reliability: Preview now has visible loading/status/error messages beside the control, scrolls the chart into view, and supports explicit bull/bear illustration modes if no current rule matches. Illustrations are labelled as illustrations. Image errors/timeouts are visible and browsers lacking Web Animations use a static fallback. Effects remain off by default. Native Chrome access was not approved for this session, so Chrome-session verification remains a limitation; available-browser playback and compatibility paths were checked.
 
 Validation includes independent hand-calculated event returns, Wilson reference intervals, causal prefixes, non-overlap, missing/future/conflicting SEC facts, same-period/accession requirements, zero-request cache hits and annuity/perpetuity valuation reconciliation, plus existing regressions. Browser checks cover the three tabs, holdout, source ratios, DCF arithmetic, fund/bank exclusions and partial-quarter history.
+
+
+### Publisher collision recovery
+
+The first EOD job collected and validated its outputs but lost the branch update race to a website commit. The generated data commit was recovered directly from GitHub objects and applied only to its changed data paths, preserving newer SEC files and website code. No source downloads were repeated. EOD publishing now rebases before each of at most three push attempts, without force pushes. Editing the workflow alone no longer triggers a fresh upstream collection; scheduled and manual refreshes and actual collector-source triggers remain available. The first Weekly SEC fundamentals run succeeded on GitHub with fresh source-check timestamps for the covered issuers.

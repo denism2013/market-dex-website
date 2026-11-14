@@ -25,12 +25,14 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - name: Recheck daily OHLCV and rebuild dependent stock fields
-        run: python scripts/refresh_market_close.py
+        run: |
+          python scripts/refresh_market_close.py
+          python scripts/build_rulebook.py
       - name: Publish the verified stock snapshot
         run: |
           git config user.name 'market-dex-data-bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/latest.json data/bootstrap.js data/market-preview.json data/extra-tickers.json
+          git add data/rulebook.json data/rules data/latest.json data/bootstrap.js data/market-preview.json data/extra-tickers.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: reconcile source-dated post-close stock observations'
             git pull --rebase origin main

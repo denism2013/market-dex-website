@@ -50,12 +50,13 @@ jobs:
         run: |
           python scripts/build_previews.py
           python scripts/build_lab_data.py
+          python scripts/build_rulebook.py
       - name: Commit only when source observations changed
         shell: bash
         run: |
           git config user.name 'market-dex-data-bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/extra-tickers.json data/economy.json data/latest.json data/bootstrap.js data/treasury-history.json data/explore.json data/treasury-recent.json data/market-preview.json data/global-markets.json data/internals.json data/lab-sector.json data/lab-holdings.json data/lab-chips.json data/lab-manifest.json
+          git add data/rulebook.json data/rules data/extra-tickers.json data/economy.json data/latest.json data/bootstrap.js data/treasury-history.json data/explore.json data/treasury-recent.json data/market-preview.json data/global-markets.json data/internals.json data/lab-sector.json data/lab-holdings.json data/lab-chips.json data/lab-manifest.json
           if git diff --cached --quiet; then
             echo 'No newer verified observation; leaving published snapshot unchanged.'
           else

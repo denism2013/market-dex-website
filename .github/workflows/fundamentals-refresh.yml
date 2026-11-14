@@ -1,0 +1,40 @@
+name: Weekly SEC fundamentals
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * 0'
+      timezone: 'America/New_York'
+permissions:
+  contents: write
+concurrency:
+  group: market-dex-daily-snapshot
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - uses: actions/cache@v4
+        with:
+          path: work/sec-cache
+          key: sec-fundamentals-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: sec-fundamentals-${{ runner.os }}-
+      - name: Collect bounded cached SEC facts
+        env:
+          SEC_CONTACT_EMAIL: ${{ secrets.SEC_CONTACT_EMAIL }}
+        run: python scripts/update_fundamentals.py --max-companies 35
+      - name: Publish only compact source-dated statements
+        run: |
+          git config user.name 'market-dex-data-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/fundamentals-index.json data/fundamentals
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: refresh cached SEC fundamentals'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi

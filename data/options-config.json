@@ -1,0 +1,17 @@
+{
+  "enabled": false,
+  "target_count": 100,
+  "selection": "Top 100 distinct Russell 3000 companies by current market capitalization; verified dated membership and company/share-class mapping required",
+  "exclude": [
+    "ANDG"
+  ],
+  "expirations": 4,
+  "timezone": "America/New_York",
+  "refresh_times": [
+    "09:45",
+    "17:00"
+  ],
+  "license_verified": false,
+  "universe_verified": false,
+  "status": "blocked_pending_verified_universe_and_data_rights"
+}

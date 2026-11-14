@@ -1,0 +1,45 @@
+name: Licensed options positioning
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 9 * * 1-5'
+      timezone: 'America/New_York'
+    - cron: '0 17 * * 1-5'
+      timezone: 'America/New_York'
+permissions:
+  contents: write
+concurrency:
+  group: market-dex-daily-snapshot
+  cancel-in-progress: false
+jobs:
+  collect:
+    if: vars.OPTIONS_PUBLIC_RIGHTS_CONFIRMED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - uses: actions/cache@v4
+        with:
+          path: work/options-etag.txt
+          key: options-etag-${{ github.run_id }}
+          restore-keys: options-etag-
+      - name: Validate licensed export and retain missing observations
+        env:
+          OPTIONS_PUBLIC_RIGHTS_CONFIRMED: ${{ vars.OPTIONS_PUBLIC_RIGHTS_CONFIRMED }}
+          OPTIONS_EXPORT_URL: ${{ vars.OPTIONS_EXPORT_URL }}
+          OPTIONS_EXPORT_TOKEN: ${{ secrets.OPTIONS_EXPORT_TOKEN }}
+        run: python scripts/import_options.py
+      - name: Publish validated positioning
+        run: |
+          git config user.name 'market-dex-data-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/options-positioning.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: refresh licensed source-dated options positioning'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
